@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VB-MAPP 관리 시스템</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { User, Target, Users, BarChart3, Search, Plus, Edit3, Check, Pause, Play, Calendar } = lucide;
+
+        // 30개 VB-MAPP 테스트 데이터
+        const sampleGoals = [
+          { id: 'VB001', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-a*', content: '관심 혹은 다른 강화제의 맨드의 표현으로 2차례 눈맞춤을 제공한다(시선을 옮긴다). (관)' },
+          { id: 'VB002', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-b*', content: 'MO의 통제로 선호 사물에 2차례 접근한다. (관)' },
+          { id: 'VB003', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-c*', content: '선호 사물을 얻으려고 다른 사람 손을 2차례 이끈다. (관)' },
+          { id: 'VB004', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-d*', content: '강화제를 얻으려고 2차례 포인트 하거나 혹은 손짓을 한다. (관)' },
+          { id: 'VB005', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-M', content: '1. 신체적 촉구 없이(에코익 촉구, 모방촉구 손짓 촉구 등은 허용) 2개의 단어, 수화 혹은 그림선택의 반응형태를 사용하여 맨드 한다(예: 과자, 책) (양)' },
+          { id: 'VB006', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-a*', content: '2가지 강화제를 얻으려고 각각2차례 포인트 한다.(양)' },
+          { id: 'VB007', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-b*', content: '강화제를 제시할 때 2차례 "예/아니오"를 말하거나 고개를 끄덕인다.(조기 목표가 아니다).(양)' },
+          { id: 'VB008', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-c', content: '에코익 촉구 없이(언어 혹은 사물 촉구는 허용)2가지 맨드를 표현한다.(양)' },
+          { id: 'VB009', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-d', content: '에코익 촉구 혹은 모방 촉구 없이(사물 촉구는 허용)하나의 맨드를 자발적으로 표현한다.(관)' },
+          { id: 'VB010', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-e', content: '2개의 맨드를 두 사람과 두 환경에서 일반화한다.(양)' },
+          { id: 'VB011', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-M', content: '2. 촉구 없이 적어도 4가지 맨드 허용 (무엇을 원하니?는 허용) 표현한다. 선호 사물을 보여줘도 좋다 (예: 음악, 공, 슬링키 등) (양)' },
+          { id: 'VB012', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '3-a', content: '자발적인 두 맨드를(선호 사물 제시)표현한다.(관)' },
+          { id: 'VB013', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '3-b', content: '에코익 촉구와 모방촉구 없이(언어적 촉구와 사물 촉구는 허용)다섯 맨드를 표현한다.(관)' },
+          { id: 'VB014', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '3-c', content: '같은 선호물의 2가지 종류로 일반화하면서 세 맨드를 표현한다.(예: 2종류의 미끄럼틀을 요구한다).(양)' },
+          { id: 'VB015', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '3-d', content: '에코익 촉구와 모방촉구 없이(언어적 촉구 혹은 사물 촉구는 허용)6가지 맨드를 표현한다.' },
+          { id: 'VB016', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '3-M', content: '3. 6개의 맨드를 두 사람에게, 두가지 환경에서, 한 선호 사물의 2가지 특성으로 일반화하여 표현한다 (예: 엄마와 아빠에게 비눗방울 mand하기) (양)' },
+          { id: 'VB017', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '4-a*', content: '인식할 수 있는 반응유형을 사용해 관심을 얻으려고 2차례 맨드 한다(예:상대의 팔을 두드린다).(관)' },
+          { id: 'VB018', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '4-b', content: '선호 사물이 없는 상황("무엇을 원하니?"는 허용)에서 두 맨드를 표현한다.(관)' },
+          { id: 'VB019', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '4-c', content: '언어적 촉구 없이(사물 촉구는 허용)두 맨드를 표현한다.(관)' },
+          { id: 'VB020', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '4-d*', content: '아동이 집중하고 있는 자극에 다른 사람도 함께 관심을 기울일 것을 하루에 5차례 맨드 한다.(관)' },
+          { id: 'VB021', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '4-e*', content: '원치 않는 물품 혹은 활동을 없애 줄 것을 요구하는 맨드를 1차레 표현한다(예:"아니오").(양)' },
+          { id: 'VB022', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '4-M', content: '4. 언어적 촉구 없이 자발적으로 다섯 맨드를 표현한다 선호 사물을 보여줘도 좋다 (시관: 60분)' },
+          { id: 'VB023', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '5-a', content: '선호 사물이 없는 상황(언어적 촉구는 허용)에서 3가지 맨드를 표현한다(예: "마마!").(양)' },
+          { id: 'VB024', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '5-b', content: '언어적 촉구 없이( 사물 촉구는 허용) 3가지 맨드를 표현한다.(양)' },
+          { id: 'VB025', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '5-c', content: '현재의 MO에 따라 적절히 변형한 억양을 가지고 2차례 맨드 한다.(관)' },
+          { id: 'VB026', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '5-d*', content: '20회 이하의 훈련시도로 새로운 맨드를 습득한다.(직)' },
+          { id: 'VB027', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '5-e*', content: '강화제를 제공하지 않으면 같은 맨드를 2차레 계속 표현한다(요구 열정).(양)' },
+          { id: 'VB028', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '5-M', content: '5. 촉구 없이(무엇을 원하니?는 허용) 10가지 맨드를 표현한다 선호사물을 보여줘도 좋다 (e.g., 사과, 그네, 자동차, 주스). (양)' },
+          { id: 'VB029', curriculum: 'VB-MAPP', area: '택트', itemNumber: '1-a', content: '언어 촉구와 MO가 있을 때, 익숙한 사람, 애완동물 혹은 물품을 한 차례 택트 한다(예: "엄마").(양)' },
+          { id: 'VB030', curriculum: 'VB-MAPP', area: '택트', itemNumber: '1-M', content: '1. 에코익 또는 모방촉구를 받고 2개의 대상물을 택트한다. (e.g., 사람, 애완동물들, 캐릭터들 또는 좋아하는 사물들) (직)' }
+        ];
+
+        const sampleChildren = [
+          { id: 'C001', name: '차명진', gender: '여', birthDate: '2019-05-10', therapistId: 'T01', registrationDate: '2024-01-10', memo: '' },
+          { id: 'C002', name: '차건희', gender: '남', birthDate: '2020-03-14', therapistId: 'T02', registrationDate: '2024-01-15', memo: '' },
+          { id: 'C003', name: '박서진', gender: '남', birthDate: '2018-11-02', therapistId: 'T03', registrationDate: '2024-01-15', memo: '' }
+        ];
+
+        const sampleTherapists = [
+          { id: 'T01', name: '김해미', email: 'happy2j3@gmail.com', registrationDate: '2021-09-21' },
+          { id: 'T02', name: '고민지', email: 'minjigo@simplestepaba.com', registrationDate: '2024-03-01' },
+          { id: 'T03', name: '손진선', email: 'jinsunson@simplestepaba.com', registrationDate: '2021-09-21' }
+        ];
+
+        const sampleActivities = [
+          { id: 'G001', childId: 'C001', goalId: 'VB001', startDate: '2024-01-15', completedDate: '2024-01-25', status: '완료', memo: '잘 따라함' },
+          { id: 'G002', childId: 'C001', goalId: 'VB002', startDate: '2024-01-20', completedDate: '', status: '진행중', memo: '' },
+          { id: 'G003', childId: 'C001', goalId: 'VB003', startDate: '2024-01-25', completedDate: '', status: '진행중', memo: '' },
+          { id: 'G004', childId: 'C002', goalId: 'VB001', startDate: '2024-01-18', completedDate: '', status: '보류', memo: '집중력 부족' },
+          { id: 'G005', childId: 'C003', goalId: 'VB001', startDate: '2024-01-22', completedDate: '', status: '진행중', memo: '' }
+        ];
+
+        const VBMAPPApp = () => {
+          const [currentTab, setCurrentTab] = useState('dashboard');
+          const [selectedChild, setSelectedChild] = useState(null);
+          const [searchTerm, setSearchTerm] = useState('');
+          const [goals, setGoals] = useState(sampleGoals);
+          const [children, setChildren] = useState(() => {
+            const saved = localStorage.getItem('vbmapp-children');
+            return saved ? JSON.parse(saved) : sampleChildren;
+          });
+          const [activities, setActivities] = useState(() => {
+            const saved = localStorage.getItem('vbmapp-activities');
+            return saved ? JSON.parse(saved) : sampleActivities;
+          });
+          const [therapists, setTherapists] = useState(sampleTherapists);
+
+          useEffect(() => {
+            localStorage.setItem('vbmapp-activities', JSON.stringify(activities));
+          }, [activities]);
+
+          useEffect(() => {
+            localStorage.setItem('vbmapp-children', JSON.stringify(children));
+          }, [children]);
+
+          const getChildProgress = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const total = childActivities.length;
+            const completed = childActivities.filter(activity => activity.status === '완료').length;
+            const inProgress = childActivities.filter(activity => activity.status === '진행중').length;
+            const onHold = childActivities.filter(activity => activity.status === '보류').length;
+            
+            return { total, completed, inProgress, onHold, progressRate: total > 0 ? Math.round((completed / total) * 100) : 0 };
+          };
+
+          const updateGoalStatus = (activityId, newStatus) => {
+            setActivities(prev => prev.map(activity => 
+              activity.id === activityId 
+                ? { 
+                    ...activity, 
+                    status: newStatus,
+                    completedDate: newStatus === '완료' ? new Date().toISOString().split('T')[0] : ''
+                  }
+                : activity
+            ));
+          };
+
+          const assignGoal = (childId, goalId) => {
+            const newActivity = {
+              id: `G${Date.now()}`,
+              childId,
+              goalId,
+              startDate: new Date().toISOString().split('T')[0],
+              completedDate: '',
+              status: '진행중',
+              memo: ''
+            };
+            setActivities(prev => [...prev, newActivity]);
+          };
+
+          const DashboardTab = () => (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {children.map(child => {
+                  const progress = getChildProgress(child.id);
+                  const therapist = therapists.find(t => t.id === child.therapistId);
+                  
+                  return (
+                    <div key={child.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800">{child.name}</h3>
+                        <span className="text-sm text-gray-500">{child.gender} · {child.birthDate}</span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>진행률</span>
+                            <span>{progress.progressRate}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${progress.progressRate}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="bg-green-50 rounded p-2">
+                            <div className="text-green-600 font-semibold">{progress.completed}</div>
+                            <div className="text-green-500">완료</div>
+                          </div>
+                          <div className="bg-blue-50 rounded p-2">
+                            <div className="text-blue-600 font-semibold">{progress.inProgress}</div>
+                            <div className="text-blue-500">진행중</div>
+                          </div>
+                          <div className="bg-orange-50 rounded p-2">
+                            <div className="text-orange-600 font-semibold">{progress.onHold}</div>
+                            <div className="text-orange-500">보류</div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-sm text-gray-500">
+                          담당: {therapist?.name}
+                        </div>
+                        
+                        <button 
+                          onClick={() => {setSelectedChild(child); setCurrentTab('childDetail');}}
+                          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
+                        >
+                          상세 관리
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          const ChildDetailTab = () => {
+            if (!selectedChild) return React.createElement('div', null, '아동을 선택해주세요.');
+            
+            const childActivities = activities.filter(activity => activity.childId === selectedChild.id);
+            const assignedGoalIds = childActivities.map(activity => activity.goalId);
+            const availableGoals = goals.filter(goal => !assignedGoalIds.includes(goal.id));
+            
+            return React.createElement('div', { className: "space-y-6" },
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                  React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, `${selectedChild.name} 목표 관리`),
+                  React.createElement('button', {
+                    onClick: () => setCurrentTab('dashboard'),
+                    className: "text-blue-500 hover:text-blue-700"
+                  }, '← 돌아가기')
+                ),
+                
+                React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" },
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-blue-600" }, childActivities.length),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '총 할당 목표')
+                  ),
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-green-600" }, 
+                      childActivities.filter(a => a.status === '완료').length
+                    ),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '완료')
+                  ),
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-blue-600" }, 
+                      childActivities.filter(a => a.status === '진행중').length
+                    ),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '진행중')
+                  ),
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-orange-600" }, 
+                      childActivities.filter(a => a.status === '보류').length
+                    ),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '보류')
+                  )
+                )
+              ),
+
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '진행중인 목표'),
+                React.createElement('div', { className: "space-y-3" },
+                  childActivities
+                    .filter(activity => activity.status === '진행중')
+                    .map(activity => {
+                      const goal = goals.find(g => g.id === activity.goalId);
+                      return React.createElement('div', { 
+                        key: activity.id, 
+                        className: "border rounded-lg p-4 bg-blue-50" 
+                      },
+                        React.createElement('div', { className: "flex justify-between items-start mb-2" },
+                          React.createElement('div', { className: "flex-1" },
+                            React.createElement('div', { className: "font-medium text-blue-800" }, 
+                              `${goal?.area} ${goal?.itemNumber}`
+                            ),
+                            React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
+                            React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                              `시작일: ${activity.startDate}`
+                            )
+                          ),
+                          React.createElement('div', { className: "flex space-x-2" },
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '완료'),
+                              className: "bg-green-500 text-white p-2 rounded hover:bg-green-600",
+                              title: "완료"
+                            }, React.createElement(Check, { size: 16 })),
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '보류'),
+                              className: "bg-orange-500 text-white p-2 rounded hover:bg-orange-600",
+                              title: "보류"
+                            }, React.createElement(Pause, { size: 16 }))
+                          )
+                        )
+                      );
+                    })
+                )
+              ),
+
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '완료된 목표'),
+                React.createElement('div', { className: "space-y-3" },
+                  childActivities
+                    .filter(activity => activity.status === '완료')
+                    .map(activity => {
+                      const goal = goals.find(g => g.id === activity.goalId);
+                      return React.createElement('div', { 
+                        key: activity.id, 
+                        className: "border rounded-lg p-4 bg-green-50" 
+                      },
+                        React.createElement('div', { className: "flex justify-between items-start" },
+                          React.createElement('div', { className: "flex-1" },
+                            React.createElement('div', { className: "font-medium text-green-800" }, 
+                              `${goal?.area} ${goal?.itemNumber}`
+                            ),
+                            React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
+                            React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                              `완료일: ${activity.completedDate}`
+                            ),
+                            activity.memo && React.createElement('div', { className: "text-xs text-gray-600 mt-1" }, 
+                              `메모: ${activity.memo}`
+                            )
+                          )
+                        )
+                      );
+                    })
+                )
+              ),
+
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '보류된 목표'),
+                React.createElement('div', { className: "space-y-3" },
+                  childActivities
+                    .filter(activity => activity.status === '보류')
+                    .map(activity => {
+                      const goal = goals.find(g => g.id === activity.goalId);
+                      return React.createElement('div', { 
+                        key: activity.id, 
+                        className: "border rounded-lg p-4 bg-orange-50" 
+                      },
+                        React.createElement('div', { className: "flex justify-between items-start" },
+                          React.createElement('div', { className: "flex-1" },
+                            React.createElement('div', { className: "font-medium text-orange-800" }, 
+                              `${goal?.area} ${goal?.itemNumber}`
+                            ),
+                            React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
+                            React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                              `시작일: ${activity.startDate}`
+                            ),
+                            activity.memo && React.createElement('div', { className: "text-xs text-gray-600 mt-1" }, 
+                              `보류 사유: ${activity.memo}`
+                            )
+                          ),
+                          React.createElement('div', { className: "flex space-x-2" },
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '진행중'),
+                              className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600",
+                              title: "재시작"
+                            }, React.createElement(Play, { size: 16 })),
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '완료'),
+                              className: "bg-green-500 text-white p-2 rounded hover:bg-green-600",
+                              title: "완료"
+                            }, React.createElement(Check, { size: 16 }))
+                          )
+                        )
+                      );
+                    })
+                )
+              ),
+
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '새 목표 할당'),
+                React.createElement('div', { className: "space-y-3 max-h-60 overflow-y-auto" },
+                  availableGoals.slice(0, 20).map(goal =>
+                    React.createElement('div', { 
+                      key: goal.id, 
+                      className: "border rounded-lg p-4 hover:bg-gray-50" 
+                    },
+                      React.createElement('div', { className: "flex justify-between items-start" },
+                        React.createElement('div', { className: "flex-1" },
+                          React.createElement('div', { className: "font-medium" }, 
+                            `${goal.area} ${goal.itemNumber}`
+                          ),
+                          React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal.content)
+                        ),
+                        React.createElement('button', {
+                          onClick: () => assignGoal(selectedChild.id, goal.id),
+                          className: "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                        }, '할당')
+                      )
+                    )
+                  )
+                )
+              )
+            );
+          };
+
+          const GoalsTab = () => {
+            const filteredGoals = goals.filter(goal => 
+              goal.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              goal.area.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              goal.id.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            return React.createElement('div', { className: "space-y-6" },
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.
