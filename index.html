@@ -4,18 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VB-MAPP 관리 시스템</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React 및 관련 라이브러리 - 순서가 중요! -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+    
+    <!-- Lucide Icons (React 버전) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const { User, Target, Users, BarChart3, Search, Plus, Edit3, Check, Pause, Play, Calendar } = lucide;
+        
+        // Lucide 아이콘들 (단순화)
+        const User = () => React.createElement('div', { className: 'w-6 h-6 bg-gray-600 rounded-full' });
+        const Target = ({ className, size }) => React.createElement('div', { 
+            className: `${className} ${size ? `w-${size/4} h-${size/4}` : 'w-8 h-8'} bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xs` 
+        }, 'VB');
+        const Users = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-600 rounded` });
+        const BarChart3 = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-600 rounded` });
+        const Search = ({ className, size }) => React.createElement('div', { className: `${className} w-5 h-5 bg-gray-400 rounded` });
+        const Check = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '✓');
+        const Pause = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '||');
+        const Play = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▶');
 
         // 30개 VB-MAPP 테스트 데이터
         const sampleGoals = [
@@ -77,21 +95,37 @@
           const [searchTerm, setSearchTerm] = useState('');
           const [goals, setGoals] = useState(sampleGoals);
           const [children, setChildren] = useState(() => {
-            const saved = localStorage.getItem('vbmapp-children');
-            return saved ? JSON.parse(saved) : sampleChildren;
+            try {
+              const saved = localStorage.getItem('vbmapp-children');
+              return saved ? JSON.parse(saved) : sampleChildren;
+            } catch (e) {
+              return sampleChildren;
+            }
           });
           const [activities, setActivities] = useState(() => {
-            const saved = localStorage.getItem('vbmapp-activities');
-            return saved ? JSON.parse(saved) : sampleActivities;
+            try {
+              const saved = localStorage.getItem('vbmapp-activities');
+              return saved ? JSON.parse(saved) : sampleActivities;
+            } catch (e) {
+              return sampleActivities;
+            }
           });
           const [therapists, setTherapists] = useState(sampleTherapists);
 
           useEffect(() => {
-            localStorage.setItem('vbmapp-activities', JSON.stringify(activities));
+            try {
+              localStorage.setItem('vbmapp-activities', JSON.stringify(activities));
+            } catch (e) {
+              console.log('localStorage 저장 실패');
+            }
           }, [activities]);
 
           useEffect(() => {
-            localStorage.setItem('vbmapp-children', JSON.stringify(children));
+            try {
+              localStorage.setItem('vbmapp-children', JSON.stringify(children));
+            } catch (e) {
+              console.log('localStorage 저장 실패');
+            }
           }, [children]);
 
           const getChildProgress = (childId) => {
@@ -130,64 +164,63 @@
           };
 
           const DashboardTab = () => (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {children.map(child => {
+            React.createElement('div', { className: "space-y-6" },
+              React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
+                children.map(child => {
                   const progress = getChildProgress(child.id);
                   const therapist = therapists.find(t => t.id === child.therapistId);
                   
-                  return (
-                    <div key={child.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-800">{child.name}</h3>
-                        <span className="text-sm text-gray-500">{child.gender} · {child.birthDate}</span>
-                      </div>
+                  return React.createElement('div', { 
+                    key: child.id, 
+                    className: "bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500" 
+                  },
+                    React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                      React.createElement('h3', { className: "text-lg font-semibold text-gray-800" }, child.name),
+                      React.createElement('span', { className: "text-sm text-gray-500" }, `${child.gender} · ${child.birthDate}`)
+                    ),
+                    
+                    React.createElement('div', { className: "space-y-3" },
+                      React.createElement('div', null,
+                        React.createElement('div', { className: "flex justify-between text-sm text-gray-600 mb-1" },
+                          React.createElement('span', null, '진행률'),
+                          React.createElement('span', null, `${progress.progressRate}%`)
+                        ),
+                        React.createElement('div', { className: "w-full bg-gray-200 rounded-full h-2" },
+                          React.createElement('div', { 
+                            className: "bg-blue-500 h-2 rounded-full transition-all duration-300",
+                            style: { width: `${progress.progressRate}%` }
+                          })
+                        )
+                      ),
                       
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>진행률</span>
-                            <span>{progress.progressRate}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${progress.progressRate}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                          <div className="bg-green-50 rounded p-2">
-                            <div className="text-green-600 font-semibold">{progress.completed}</div>
-                            <div className="text-green-500">완료</div>
-                          </div>
-                          <div className="bg-blue-50 rounded p-2">
-                            <div className="text-blue-600 font-semibold">{progress.inProgress}</div>
-                            <div className="text-blue-500">진행중</div>
-                          </div>
-                          <div className="bg-orange-50 rounded p-2">
-                            <div className="text-orange-600 font-semibold">{progress.onHold}</div>
-                            <div className="text-orange-500">보류</div>
-                          </div>
-                        </div>
-                        
-                        <div className="text-sm text-gray-500">
-                          담당: {therapist?.name}
-                        </div>
-                        
-                        <button 
-                          onClick={() => {setSelectedChild(child); setCurrentTab('childDetail');}}
-                          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
-                        >
-                          상세 관리
-                        </button>
-                      </div>
-                    </div>
+                      React.createElement('div', { className: "grid grid-cols-3 gap-2 text-center text-xs" },
+                        React.createElement('div', { className: "bg-green-50 rounded p-2" },
+                          React.createElement('div', { className: "text-green-600 font-semibold" }, progress.completed),
+                          React.createElement('div', { className: "text-green-500" }, '완료')
+                        ),
+                        React.createElement('div', { className: "bg-blue-50 rounded p-2" },
+                          React.createElement('div', { className: "text-blue-600 font-semibold" }, progress.inProgress),
+                          React.createElement('div', { className: "text-blue-500" }, '진행중')
+                        ),
+                        React.createElement('div', { className: "bg-orange-50 rounded p-2" },
+                          React.createElement('div', { className: "text-orange-600 font-semibold" }, progress.onHold),
+                          React.createElement('div', { className: "text-orange-500" }, '보류')
+                        )
+                      ),
+                      
+                      React.createElement('div', { className: "text-sm text-gray-500" }, 
+                        `담당: ${therapist?.name}`
+                      ),
+                      
+                      React.createElement('button', {
+                        onClick: () => {setSelectedChild(child); setCurrentTab('childDetail');},
+                        className: "w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
+                      }, '상세 관리')
+                    )
                   );
-                })}
-              </div>
-            </div>
+                })
+              )
+            )
           );
 
           const ChildDetailTab = () => {
@@ -233,6 +266,7 @@
                 )
               ),
 
+              // 진행중인 목표들
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
                 React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '진행중인 목표'),
                 React.createElement('div', { className: "space-y-3" },
@@ -272,6 +306,7 @@
                 )
               ),
 
+              // 완료된 목표들
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
                 React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '완료된 목표'),
                 React.createElement('div', { className: "space-y-3" },
@@ -302,6 +337,7 @@
                 )
               ),
 
+              // 보류된 목표들
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
                 React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '보류된 목표'),
                 React.createElement('div', { className: "space-y-3" },
@@ -344,6 +380,7 @@
                 )
               ),
 
+              // 새 목표 할당
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
                 React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '새 목표 할당'),
                 React.createElement('div', { className: "space-y-3 max-h-60 overflow-y-auto" },
@@ -380,4 +417,106 @@
 
             return React.createElement('div', { className: "space-y-6" },
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
-                React.
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, 'VB-MAPP 목표 목록'),
+                  React.createElement('div', { className: "relative" },
+                    React.createElement(Search, { 
+                      className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400", 
+                      size: 20 
+                    }),
+                    React.createElement('input', {
+                      type: "text",
+                      placeholder: "목표 검색...",
+                      className: "pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      value: searchTerm,
+                      onChange: (e) => setSearchTerm(e.target.value)
+                    })
+                  )
+                ),
+                
+                React.createElement('div', { className: "space-y-3 max-h-96 overflow-y-auto" },
+                  filteredGoals.map(goal =>
+                    React.createElement('div', { 
+                      key: goal.id, 
+                      className: "border rounded-lg p-4 hover:bg-gray-50" 
+                    },
+                      React.createElement('div', { className: "flex justify-between items-start" },
+                        React.createElement('div', { className: "flex-1" },
+                          React.createElement('div', { className: "font-medium text-blue-800" }, 
+                            `${goal.area} ${goal.itemNumber}`
+                          ),
+                          React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal.content)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            );
+          };
+
+          return React.createElement('div', { className: "min-h-screen bg-gray-100" },
+            React.createElement('header', { className: "bg-white shadow-sm border-b" },
+              React.createElement('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+                React.createElement('div', { className: "flex justify-between items-center h-16" },
+                  React.createElement('div', { className: "flex items-center" },
+                    React.createElement(Target, { className: "h-8 w-8 text-blue-600 mr-3" }),
+                    React.createElement('h1', { className: "text-xl font-bold text-gray-900" }, 'VB-MAPP 관리 시스템')
+                  ),
+                  React.createElement('div', { className: "flex items-center space-x-4" },
+                    React.createElement('span', { className: "text-sm text-gray-600" }, '김해미 치료사'),
+                    React.createElement(User, { className: "h-6 w-6 text-gray-600" })
+                  )
+                )
+              )
+            ),
+
+            React.createElement('nav', { className: "bg-white border-b" },
+              React.createElement('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+                React.createElement('div', { className: "flex space-x-8" },
+                  React.createElement('button', {
+                    onClick: () => setCurrentTab('dashboard'),
+                    className: `py-4 px-2 border-b-2 font-medium text-sm ${
+                      currentTab === 'dashboard' 
+                        ? 'border-blue-500 text-blue-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`
+                  },
+                    React.createElement(BarChart3, { className: "inline w-4 h-4 mr-2" }),
+                    '대시보드'
+                  ),
+                  React.createElement('button', {
+                    onClick: () => setCurrentTab('goals'),
+                    className: `py-4 px-2 border-b-2 font-medium text-sm ${
+                      currentTab === 'goals' 
+                        ? 'border-blue-500 text-blue-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`
+                  },
+                    React.createElement(Target, { className: "inline w-4 h-4 mr-2" }),
+                    '목표 목록'
+                  ),
+                  selectedChild && currentTab === 'childDetail' && React.createElement('button', {
+                    className: "py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium text-sm"
+                  },
+                    React.createElement(Users, { className: "inline w-4 h-4 mr-2" }),
+                    `${selectedChild.name} 관리`
+                  )
+                )
+              )
+            ),
+
+            React.createElement('main', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" },
+              currentTab === 'dashboard' && DashboardTab(),
+              currentTab === 'goals' && GoalsTab(),
+              currentTab === 'childDetail' && ChildDetailTab()
+            )
+          );
+        };
+
+        // React 앱 렌더링
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(VBMAPPApp));
+    </script>
+</body>
+</html>
