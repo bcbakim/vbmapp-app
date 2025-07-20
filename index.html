@@ -620,9 +620,41 @@
             // 사용 가능한 커리큘럼 목록 생성
             const availableCurriculums = [...new Set(goals.map(goal => goal.curriculum))].sort();
             
+            // 아동이 사용하는 커리큘럼별 진행상황 계산
+            const getCurriculumProgress = () => {
+              const curriculumData = {};
+              
+              childActivities.forEach(activity => {
+                const goal = goals.find(g => g.id === activity.goalId);
+                if (goal) {
+                  if (!curriculumData[goal.curriculum]) {
+                    curriculumData[goal.curriculum] = {
+                      total: 0,
+                      completed: 0,
+                      inProgress: 0,
+                      onHold: 0
+                    };
+                  }
+                  
+                  curriculumData[goal.curriculum].total++;
+                  if (activity.status === '완료') {
+                    curriculumData[goal.curriculum].completed++;
+                  } else if (activity.status === '진행중') {
+                    curriculumData[goal.curriculum].inProgress++;
+                  } else if (activity.status === '보류') {
+                    curriculumData[goal.curriculum].onHold++;
+                  }
+                }
+              });
+              
+              return curriculumData;
+            };
+            
+            const curriculumProgress = getCurriculumProgress();
+            
             return React.createElement('div', { className: "space-y-6" },
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
-                React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                React.createElement('div', { className: "flex items-center justify-between mb-6" },
                   React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, `${selectedChild.name} 목표 관리`),
                   React.createElement('div', { className: "flex space-x-2" },
                     React.createElement('button', {
@@ -636,6 +668,48 @@
                       onClick: () => setCurrentTab('dashboard'),
                       className: "text-blue-500 hover:text-blue-700"
                     }, '← 돌아가기')
+                  )
+                ),
+                
+                // 커리큘럼별 진행상황 표시
+                Object.keys(curriculumProgress).length > 0 && React.createElement('div', { className: "mb-6" },
+                  React.createElement('h3', { className: "text-lg font-semibold mb-3 text-gray-700" }, '커리큘럼별 진행상황'),
+                  React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" },
+                    Object.entries(curriculumProgress).map(([curriculum, data]) => {
+                      const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                      return React.createElement('div', { 
+                        key: curriculum, 
+                        className: "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4" 
+                      },
+                        React.createElement('div', { className: "flex items-center justify-between mb-2" },
+                          React.createElement('span', { className: "font-medium text-blue-800" }, curriculum),
+                          React.createElement('span', { className: "text-sm text-blue-600" }, `${progressRate}%`)
+                        ),
+                        React.createElement('div', { className: "w-full bg-blue-200 rounded-full h-2 mb-3" },
+                          React.createElement('div', { 
+                            className: "bg-blue-600 h-2 rounded-full transition-all duration-300",
+                            style: { width: `${progressRate}%` }
+                          })
+                        ),
+                        React.createElement('div', { className: "grid grid-cols-3 gap-2 text-xs text-center" },
+                          React.createElement('div', { className: "bg-green-100 text-green-700 rounded py-1" },
+                            React.createElement('div', { className: "font-semibold" }, data.completed),
+                            React.createElement('div', null, '완료')
+                          ),
+                          React.createElement('div', { className: "bg-blue-100 text-blue-700 rounded py-1" },
+                            React.createElement('div', { className: "font-semibold" }, data.inProgress),
+                            React.createElement('div', null, '진행중')
+                          ),
+                          React.createElement('div', { className: "bg-orange-100 text-orange-700 rounded py-1" },
+                            React.createElement('div', { className: "font-semibold" }, data.onHold),
+                            React.createElement('div', null, '보류')
+                          )
+                        ),
+                        React.createElement('div', { className: "mt-2 text-center text-xs text-gray-600" },
+                          `총 ${data.total}개 목표`
+                        )
+                      );
+                    })
                   )
                 ),
                 
