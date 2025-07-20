@@ -38,6 +38,9 @@
         const Pause = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '||');
         const Play = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▶');
         const Download = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-green-600 rounded flex items-center justify-center text-white text-xs font-bold` }, '↓');
+        const ChevronDown = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▼');
+        const ChevronUp = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▲');
+        const Plus = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '+');
 
         // 30개 VB-MAPP 테스트 데이터
         const sampleGoals = [
@@ -86,11 +89,62 @@
         ];
 
         const sampleActivities = [
-          { id: 'G001', childId: 'C001', goalId: 'VB001', startDate: '2024-01-15', completedDate: '2024-01-25', status: '완료', memo: '잘 따라함' },
-          { id: 'G002', childId: 'C001', goalId: 'VB002', startDate: '2024-01-20', completedDate: '', status: '진행중', memo: '' },
-          { id: 'G003', childId: 'C001', goalId: 'VB003', startDate: '2024-01-25', completedDate: '', status: '진행중', memo: '' },
-          { id: 'G004', childId: 'C002', goalId: 'VB001', startDate: '2024-01-18', completedDate: '', status: '보류', memo: '집중력 부족' },
-          { id: 'G005', childId: 'C003', goalId: 'VB001', startDate: '2024-01-22', completedDate: '', status: '진행중', memo: '' }
+          { 
+            id: 'G001', 
+            childId: 'C001', 
+            goalId: 'VB001', 
+            startDate: '2024-01-15', 
+            completedDate: '2024-01-25', 
+            status: '완료', 
+            memo: '잘 따라함',
+            subItems: []
+          },
+          { 
+            id: 'G002', 
+            childId: 'C001', 
+            goalId: 'VB002', 
+            startDate: '2024-01-20', 
+            completedDate: '', 
+            status: '진행중', 
+            memo: '',
+            subItems: [
+              { id: 'SI001', name: '좋아하는 장난감', completed: true },
+              { id: 'SI002', name: '간식', completed: false }
+            ]
+          },
+          { 
+            id: 'G003', 
+            childId: 'C001', 
+            goalId: 'VB005', 
+            startDate: '2024-01-25', 
+            completedDate: '', 
+            status: '진행중', 
+            memo: '',
+            subItems: [
+              { id: 'SI003', name: '과자', completed: true },
+              { id: 'SI004', name: '책', completed: true }
+            ]
+          },
+          { 
+            id: 'G004', 
+            childId: 'C002', 
+            goalId: 'VB001', 
+            startDate: '2024-01-18', 
+            completedDate: '', 
+            status: '보류', 
+            memo: '집중력 부족',
+            subItems: []
+          },
+          { 
+            id: 'G005', 
+            childId: 'C003', 
+            goalId: 'VB001', 
+            startDate: '2024-01-22', 
+            completedDate: '', 
+            status: '진행중', 
+            memo: '',
+            subItems: []
+          }
         ];
 
         const VBMAPPApp = () => {
@@ -115,6 +169,7 @@
             }
           });
           const [therapists, setTherapists] = useState(sampleTherapists);
+          const [expandedItems, setExpandedItems] = useState({});
 
           useEffect(() => {
             try {
@@ -162,9 +217,73 @@
               startDate: new Date().toISOString().split('T')[0],
               completedDate: '',
               status: '진행중',
-              memo: ''
+              memo: '',
+              subItems: []
             };
             setActivities(prev => [...prev, newActivity]);
+          };
+
+          // 세부 항목 관련 함수들
+          const toggleExpanded = (activityId) => {
+            setExpandedItems(prev => ({
+              ...prev,
+              [activityId]: !prev[activityId]
+            }));
+          };
+
+          const addSubItem = (activityId) => {
+            const itemName = prompt('세부 항목을 입력하세요:');
+            if (itemName && itemName.trim()) {
+              setActivities(prev => prev.map(activity => 
+                activity.id === activityId 
+                  ? {
+                      ...activity,
+                      subItems: [
+                        ...activity.subItems,
+                        {
+                          id: `SI${Date.now()}`,
+                          name: itemName.trim(),
+                          completed: false
+                        }
+                      ]
+                    }
+                  : activity
+              ));
+            }
+          };
+
+          const toggleSubItem = (activityId, subItemId) => {
+            setActivities(prev => prev.map(activity => 
+              activity.id === activityId 
+                ? {
+                    ...activity,
+                    subItems: activity.subItems.map(item =>
+                      item.id === subItemId
+                        ? { ...item, completed: !item.completed }
+                        : item
+                    )
+                  }
+                : activity
+            ));
+          };
+
+          const removeSubItem = (activityId, subItemId) => {
+            setActivities(prev => prev.map(activity => 
+              activity.id === activityId 
+                ? {
+                    ...activity,
+                    subItems: activity.subItems.filter(item => item.id !== subItemId)
+                  }
+                : activity
+            ));
+          };
+
+          const getSubItemProgress = (subItems) => {
+            if (!subItems || subItems.length === 0) return { completed: 0, total: 0, rate: 0 };
+            const completed = subItems.filter(item => item.completed).length;
+            const total = subItems.length;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return { completed, total, rate };
           };
 
           // 엑셀 다운로드 함수
@@ -174,10 +293,11 @@
               const wb = XLSX.utils.book_new();
               
               // 데이터 준비
-              const excelData = data.map(activity => {
+              const excelData = [];
+              
+              data.forEach(activity => {
                 const goal = goals.find(g => g.id === activity.goalId);
-                
-                return {
+                const baseData = {
                   '영역': goal?.area || '',
                   '항목번호': goal?.itemNumber || '',
                   '목표내용': goal?.content || '',
@@ -186,6 +306,31 @@
                   '상태': activity.status || '',
                   '메모': activity.memo || ''
                 };
+
+                if (activity.subItems && activity.subItems.length > 0) {
+                  // 세부 항목이 있는 경우
+                  activity.subItems.forEach((item, index) => {
+                    excelData.push({
+                      ...baseData,
+                      '세부항목': item.name,
+                      '세부완료': item.completed ? 'O' : 'X',
+                      '목표내용': index === 0 ? baseData['목표내용'] : '', // 첫 번째만 목표내용 표시
+                      '영역': index === 0 ? baseData['영역'] : '',
+                      '항목번호': index === 0 ? baseData['항목번호'] : '',
+                      '시작일': index === 0 ? baseData['시작일'] : '',
+                      '완료일': index === 0 ? baseData['완료일'] : '',
+                      '상태': index === 0 ? baseData['상태'] : '',
+                      '메모': index === 0 ? baseData['메모'] : ''
+                    });
+                  });
+                } else {
+                  // 세부 항목이 없는 경우
+                  excelData.push({
+                    ...baseData,
+                    '세부항목': '',
+                    '세부완료': ''
+                  });
+                }
               });
 
               // 워크시트 생성
@@ -196,6 +341,8 @@
                 { width: 10 }, // 영역
                 { width: 12 }, // 항목번호
                 { width: 50 }, // 목표내용
+                { width: 20 }, // 세부항목
+                { width: 8 },  // 세부완료
                 { width: 12 }, // 시작일
                 { width: 12 }, // 완료일
                 { width: 10 }, // 상태
@@ -384,18 +531,35 @@
                     .filter(activity => activity.status === '진행중')
                     .map(activity => {
                       const goal = goals.find(g => g.id === activity.goalId);
+                      const subProgress = getSubItemProgress(activity.subItems);
+                      const isExpanded = expandedItems[activity.id];
+                      
                       return React.createElement('div', { 
                         key: activity.id, 
                         className: "border rounded-lg p-4 bg-blue-50" 
                       },
                         React.createElement('div', { className: "flex justify-between items-start mb-2" },
                           React.createElement('div', { className: "flex-1" },
-                            React.createElement('div', { className: "font-medium text-blue-800" }, 
-                              `${goal?.area} ${goal?.itemNumber}`
+                            React.createElement('div', { className: "flex items-center space-x-2" },
+                              React.createElement('div', { className: "font-medium text-blue-800" }, 
+                                `${goal?.area} ${goal?.itemNumber}`
+                              ),
+                              subProgress.total > 0 && React.createElement('div', { 
+                                className: "text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded" 
+                              }, `${subProgress.completed}/${subProgress.total} 달성`)
                             ),
                             React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
                             React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
                               `시작일: ${activity.startDate}`
+                            ),
+                            React.createElement('div', { className: "flex items-center space-x-2 mt-2" },
+                              React.createElement('button', {
+                                onClick: () => toggleExpanded(activity.id),
+                                className: "text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                              },
+                                isExpanded ? React.createElement(ChevronUp, { className: "" }) : React.createElement(ChevronDown, { className: "" }),
+                                React.createElement('span', null, isExpanded ? '세부항목 접기' : '세부항목 펼치기')
+                              )
                             )
                           ),
                           React.createElement('div', { className: "flex space-x-2" },
@@ -409,6 +573,48 @@
                               className: "bg-orange-500 text-white p-2 rounded hover:bg-orange-600",
                               title: "보류"
                             }, React.createElement(Pause, { size: 16 }))
+                          )
+                        ),
+                        
+                        // 세부 항목 섹션
+                        isExpanded && React.createElement('div', { className: "mt-4 pt-4 border-t border-blue-200" },
+                          React.createElement('div', { className: "flex justify-between items-center mb-3" },
+                            React.createElement('h4', { className: "text-sm font-medium text-blue-800" }, '세부 달성 항목'),
+                            React.createElement('button', {
+                              onClick: () => addSubItem(activity.id),
+                              className: "bg-blue-500 text-white p-1 rounded hover:bg-blue-600 flex items-center space-x-1"
+                            },
+                              React.createElement(Plus, { className: "" }),
+                              React.createElement('span', { className: "text-xs" }, '항목 추가')
+                            )
+                          ),
+                          React.createElement('div', { className: "space-y-2" },
+                            activity.subItems && activity.subItems.length > 0 
+                              ? activity.subItems.map(item =>
+                                  React.createElement('div', { 
+                                    key: item.id, 
+                                    className: "flex items-center justify-between bg-white p-2 rounded border" 
+                                  },
+                                    React.createElement('div', { className: "flex items-center space-x-2" },
+                                      React.createElement('input', {
+                                        type: "checkbox",
+                                        checked: item.completed,
+                                        onChange: () => toggleSubItem(activity.id, item.id),
+                                        className: "rounded"
+                                      }),
+                                      React.createElement('span', { 
+                                        className: `text-sm ${item.completed ? 'line-through text-gray-500' : 'text-gray-800'}` 
+                                      }, item.name)
+                                    ),
+                                    React.createElement('button', {
+                                      onClick: () => removeSubItem(activity.id, item.id),
+                                      className: "text-red-500 hover:text-red-700 text-xs"
+                                    }, '삭제')
+                                  )
+                                )
+                              : React.createElement('div', { className: "text-xs text-gray-500 italic" }, 
+                                  '세부 항목이 없습니다. "항목 추가" 버튼을 클릭하여 추가하세요.'
+                                )
                           )
                         )
                       );
