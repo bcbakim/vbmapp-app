@@ -641,20 +641,28 @@
                                   placeholder: "새 세부 항목 입력...",
                                   className: "flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500",
                                   autoFocus: true,
-                                  onKeyPress: (e) => {
+                                  onKeyDown: (e) => {
                                     if (e.key === 'Enter') {
+                                      e.preventDefault();
                                       saveNewSubItem(activity.id);
                                     } else if (e.key === 'Escape') {
+                                      e.preventDefault();
                                       cancelAddSubItem();
                                     }
                                   }
                                 }),
                                 React.createElement('button', {
-                                  onClick: () => saveNewSubItem(activity.id),
+                                  onClick: (e) => {
+                                    e.preventDefault();
+                                    saveNewSubItem(activity.id);
+                                  },
                                   className: "bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
                                 }, '저장'),
                                 React.createElement('button', {
-                                  onClick: cancelAddSubItem,
+                                  onClick: (e) => {
+                                    e.preventDefault();
+                                    cancelAddSubItem();
+                                  },
                                   className: "bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-400"
                                 }, '취소')
                               )
