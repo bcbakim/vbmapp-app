@@ -176,14 +176,8 @@
               // 데이터 준비
               const excelData = data.map(activity => {
                 const goal = goals.find(g => g.id === activity.goalId);
-                const child = children.find(c => c.id === activity.childId);
-                const therapist = therapists.find(t => t.id === child?.therapistId);
                 
                 return {
-                  '아동명': child?.name || '',
-                  '성별': child?.gender || '',
-                  '생년월일': child?.birthDate || '',
-                  '담당치료사': therapist?.name || '',
                   '영역': goal?.area || '',
                   '항목번호': goal?.itemNumber || '',
                   '목표내용': goal?.content || '',
@@ -199,10 +193,6 @@
               
               // 컬럼 너비 설정
               ws['!cols'] = [
-                { width: 10 }, // 아동명
-                { width: 8 },  // 성별
-                { width: 12 }, // 생년월일
-                { width: 12 }, // 담당치료사
                 { width: 10 }, // 영역
                 { width: 12 }, // 항목번호
                 { width: 50 }, // 목표내용
