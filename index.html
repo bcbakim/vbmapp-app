@@ -245,7 +245,7 @@
                   ? {
                       ...activity,
                       subItems: [
-                        ...activity.subItems,
+                        ...(activity.subItems || []), // 기존 subItems가 undefined일 경우 빈 배열 사용
                         {
                           id: `SI${Date.now()}`,
                           name: newItemName.trim(),
@@ -270,7 +270,7 @@
               activity.id === activityId 
                 ? {
                     ...activity,
-                    subItems: activity.subItems.map(item =>
+                    subItems: (activity.subItems || []).map(item =>
                       item.id === subItemId
                         ? { ...item, completed: !item.completed }
                         : item
@@ -285,7 +285,7 @@
               activity.id === activityId 
                 ? {
                     ...activity,
-                    subItems: activity.subItems.filter(item => item.id !== subItemId)
+                    subItems: (activity.subItems || []).filter(item => item.id !== subItemId)
                   }
                 : activity
             ));
@@ -544,7 +544,7 @@
                     .filter(activity => activity.status === '진행중')
                     .map(activity => {
                       const goal = goals.find(g => g.id === activity.goalId);
-                      const subProgress = getSubItemProgress(activity.subItems);
+                      const subProgress = getSubItemProgress(activity.subItems || []); // 안전한 처리
                       const isExpanded = expandedItems[activity.id];
                       
                       return React.createElement('div', { 
@@ -602,7 +602,7 @@
                             )
                           ),
                           React.createElement('div', { className: "space-y-2" },
-                            activity.subItems && activity.subItems.length > 0 
+                            (activity.subItems && activity.subItems.length > 0)
                               ? activity.subItems.map(item =>
                                   React.createElement('div', { 
                                     key: item.id, 
