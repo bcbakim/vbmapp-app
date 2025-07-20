@@ -1119,6 +1119,10 @@
             const child = children.find(c => c.id === childId);
             const areaData = getCurriculumAreaAnalysis(childId, curriculum);
             
+            // 디버깅을 위한 로그
+            console.log('Curriculum Detail:', curriculum, childId);
+            console.log('Area Data:', areaData);
+            
             return React.createElement('div', { 
               className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50",
               onClick: () => setShowCurriculumDetail(null)
@@ -1139,56 +1143,64 @@
                 
                 Object.keys(areaData).length > 0 
                   ? React.createElement('div', { className: "space-y-4" },
-                      Object.entries(areaData).map(([area, data]) => {
-                        const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
-                        const maxWidth = Math.max(...Object.values(areaData).map(d => d.total));
-                        const barWidth = (data.total / maxWidth) * 100;
-                        
-                        return React.createElement('div', { 
-                          key: area,
-                          className: "border rounded-lg p-4 bg-gray-50"
-                        },
-                          React.createElement('div', { className: "flex justify-between items-center mb-2" },
-                            React.createElement('h3', { className: "font-medium text-gray-800" }, area),
-                            React.createElement('span', { className: "text-sm text-gray-600" }, 
-                              `${data.completed}/${data.total} (${progressRate}%)`
-                            )
-                          ),
+                      Object.entries(areaData)
+                        .sort(([, a], [, b]) => b.total - a.total) // 총 목표 수 기준 내림차순 정렬
+                        .map(([area, data]) => {
+                          const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                          const maxWidth = Math.max(...Object.values(areaData).map(d => d.total));
+                          const barWidth = Math.max((data.total / maxWidth) * 100, 20); // 최소 20% 너비 보장
                           
-                          React.createElement('div', { className: "relative" },
-                            React.createElement('div', { 
-                              className: "bg-gray-200 rounded-full h-6 relative",
-                              style: { width: `${barWidth}%`, minWidth: '100px' }
-                            },
+                          return React.createElement('div', { 
+                            key: area,
+                            className: "border rounded-lg p-4 bg-gray-50"
+                          },
+                            React.createElement('div', { className: "flex justify-between items-center mb-3" },
+                              React.createElement('h3', { className: "font-medium text-gray-800 text-lg" }, area),
+                              React.createElement('div', { className: "text-right" },
+                                React.createElement('span', { className: "text-lg font-bold text-gray-800" }, 
+                                  `${data.completed}/${data.total}`
+                                ),
+                                React.createElement('span', { className: "text-sm text-gray-600 ml-2" }, 
+                                  `(${progressRate}%)`
+                                )
+                              )
+                            ),
+                            
+                            React.createElement('div', { className: "relative mb-3" },
                               React.createElement('div', { 
-                                className: "bg-green-500 h-6 rounded-full flex items-center justify-center text-xs text-white font-semibold",
-                                style: { width: `${progressRate}%` }
-                              }, progressRate > 15 ? `${progressRate}%` : ''),
-                              progressRate <= 15 && React.createElement('span', { 
-                                className: "absolute right-2 top-0 h-6 flex items-center text-xs text-gray-600 font-semibold"
-                              }, `${progressRate}%`)
-                            )
-                          ),
-                          
-                          React.createElement('div', { className: "grid grid-cols-3 gap-2 mt-3 text-xs text-center" },
-                            React.createElement('div', { className: "bg-green-100 text-green-700 rounded py-1" },
-                              React.createElement('div', { className: "font-semibold" }, data.completed),
-                              React.createElement('div', null, '완료')
+                                className: "bg-gray-200 rounded-full h-8 relative",
+                                style: { width: `${barWidth}%`, minWidth: '150px' }
+                              },
+                                React.createElement('div', { 
+                                  className: "bg-gradient-to-r from-green-400 to-green-600 h-8 rounded-full flex items-center justify-center text-white font-bold",
+                                  style: { width: `${progressRate}%` }
+                                }, progressRate > 20 ? `${progressRate}%` : ''),
+                                progressRate <= 20 && progressRate > 0 && React.createElement('span', { 
+                                  className: "absolute right-2 top-0 h-8 flex items-center text-sm text-gray-700 font-bold"
+                                }, `${progressRate}%`)
+                              )
                             ),
-                            React.createElement('div', { className: "bg-blue-100 text-blue-700 rounded py-1" },
-                              React.createElement('div', { className: "font-semibold" }, data.inProgress),
-                              React.createElement('div', null, '진행중')
-                            ),
-                            React.createElement('div', { className: "bg-orange-100 text-orange-700 rounded py-1" },
-                              React.createElement('div', { className: "font-semibold" }, data.onHold),
-                              React.createElement('div', null, '보류')
+                            
+                            React.createElement('div', { className: "grid grid-cols-3 gap-3 text-sm" },
+                              React.createElement('div', { className: "bg-green-100 text-green-800 rounded-lg py-2 px-3 text-center" },
+                                React.createElement('div', { className: "font-bold text-lg" }, data.completed),
+                                React.createElement('div', null, '완료')
+                              ),
+                              React.createElement('div', { className: "bg-blue-100 text-blue-800 rounded-lg py-2 px-3 text-center" },
+                                React.createElement('div', { className: "font-bold text-lg" }, data.inProgress),
+                                React.createElement('div', null, '진행중')
+                              ),
+                              React.createElement('div', { className: "bg-orange-100 text-orange-800 rounded-lg py-2 px-3 text-center" },
+                                React.createElement('div', { className: "font-bold text-lg" }, data.onHold),
+                                React.createElement('div', null, '보류')
+                              )
                             )
-                          )
-                        );
-                      })
+                          );
+                        })
                     )
                   : React.createElement('div', { className: "text-center py-8 text-gray-500" },
-                      '해당 커리큘럼의 목표가 할당되지 않았습니다.'
+                      React.createElement('p', { className: "text-lg" }, '해당 커리큘럼의 목표가 할당되지 않았습니다.'),
+                      React.createElement('p', { className: "text-sm mt-2" }, '새 목표 할당에서 목표를 추가해보세요.')
                     )
               )
             );
