@@ -905,7 +905,7 @@
                 ),
                 availableGoals.length > 0 
                   ? React.createElement('div', { className: "space-y-3 max-h-60 overflow-y-auto" },
-                      availableGoals.slice(0, 50).map(goal =>
+                      availableGoals.map(goal =>
                         React.createElement('div', { 
                           key: goal.id, 
                           className: "border rounded-lg p-4 hover:bg-gray-50" 
