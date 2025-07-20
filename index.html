@@ -163,7 +163,16 @@
           const [activities, setActivities] = useState(() => {
             try {
               const saved = localStorage.getItem('vbmapp-activities');
-              return saved ? JSON.parse(saved) : sampleActivities;
+              if (saved) {
+                const parsedData = JSON.parse(saved);
+                // 기존 데이터에 subItems가 없는 경우 빈 배열로 초기화
+                const migratedData = parsedData.map(activity => ({
+                  ...activity,
+                  subItems: activity.subItems || []
+                }));
+                return migratedData;
+              }
+              return sampleActivities;
             } catch (e) {
               return sampleActivities;
             }
