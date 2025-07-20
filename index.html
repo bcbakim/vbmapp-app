@@ -747,7 +747,12 @@
                       return React.createElement('div', { 
                         key: curriculum, 
                         className: "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow",
-                        onClick: () => setShowCurriculumDetail({ curriculum, childId: selectedChild.id })
+                        onClick: (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Curriculum clicked:', curriculum, selectedChild.id);
+                          setShowCurriculumDetail({ curriculum, childId: selectedChild.id });
+                        }
                       },
                         React.createElement('div', { className: "flex items-center justify-between mb-2" },
                           React.createElement('span', { className: "font-medium text-blue-800" }, curriculum),
@@ -776,8 +781,8 @@
                         React.createElement('div', { className: "mt-2 text-center text-xs text-gray-600" },
                           `총 ${data.total}개 목표`
                         ),
-                        React.createElement('div', { className: "mt-2 text-center text-xs text-blue-500" },
-                          '클릭하여 영역별 상세보기'
+                        React.createElement('div', { className: "mt-2 text-center text-xs text-blue-500 font-medium" },
+                          '👆 클릭하여 영역별 상세보기'
                         )
                       );
                     })
@@ -1125,19 +1130,29 @@
             
             return React.createElement('div', { 
               className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50",
-              onClick: () => setShowCurriculumDetail(null)
+              onClick: (e) => {
+                e.preventDefault();
+                setShowCurriculumDetail(null);
+              }
             },
               React.createElement('div', { 
-                className: "bg-white rounded-lg p-6 max-w-4xl w-full m-4 max-h-96 overflow-y-auto",
-                onClick: (e) => e.stopPropagation()
+                className: "bg-white rounded-lg p-6 max-w-4xl w-full m-4 max-h-96 overflow-y-auto shadow-2xl",
+                onClick: (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
               },
                 React.createElement('div', { className: "flex justify-between items-center mb-6" },
                   React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, 
                     `${child?.name} - ${curriculum} 영역별 분석`
                   ),
                   React.createElement('button', {
-                    onClick: () => setShowCurriculumDetail(null),
-                    className: "text-gray-500 hover:text-gray-700 text-xl font-bold"
+                    onClick: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowCurriculumDetail(null);
+                    },
+                    className: "text-gray-500 hover:text-gray-700 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100"
                   }, '×')
                 ),
                 
