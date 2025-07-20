@@ -227,6 +227,31 @@
             return { total, completed, inProgress, onHold, progressRate: total > 0 ? Math.round((completed / total) * 100) : 0 };
           };
 
+          // 대시보드용 커리큘럼별 진행상황 계산
+          const getChildCurriculums = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const curriculumData = {};
+            
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal) {
+                if (!curriculumData[goal.curriculum]) {
+                  curriculumData[goal.curriculum] = {
+                    total: 0,
+                    completed: 0
+                  };
+                }
+                
+                curriculumData[goal.curriculum].total++;
+                if (activity.status === '완료') {
+                  curriculumData[goal.curriculum].completed++;
+                }
+              }
+            });
+            
+            return curriculumData;
+          };
+
           const updateGoalStatus = (activityId, newStatus) => {
             setActivities(prev => prev.map(activity => 
               activity.id === activityId 
@@ -542,6 +567,7 @@
                 children.map(child => {
                   const progress = getChildProgress(child.id);
                   const therapist = therapists.find(t => t.id === child.therapistId);
+                  const childCurriculums = getChildCurriculums(child.id);
                   
                   return React.createElement('div', { 
                     key: child.id, 
@@ -550,6 +576,16 @@
                     React.createElement('div', { className: "flex items-center justify-between mb-4" },
                       React.createElement('h3', { className: "text-lg font-semibold text-gray-800" }, child.name),
                       React.createElement('span', { className: "text-sm text-gray-500" }, `${child.gender} · ${child.birthDate}`)
+                    ),
+                    
+                    // 커리큘럼 배지 표시
+                    Object.keys(childCurriculums).length > 0 && React.createElement('div', { className: "flex flex-wrap gap-1 mb-3" },
+                      Object.entries(childCurriculums).map(([curriculum, data]) =>
+                        React.createElement('span', { 
+                          key: curriculum,
+                          className: "text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+                        }, `${curriculum} (${data.completed}/${data.total})`)
+                      )
                     ),
                     
                     React.createElement('div', { className: "space-y-3" },
@@ -582,7 +618,7 @@
                       ),
                       
                       React.createElement('div', { className: "text-sm text-gray-500" }, 
-                        `담당: ${therapist?.name}`
+                        `담당: ${therapist?.name} · 총 ${progress.total}개 목표`
                       ),
                       
                       React.createElement('div', { className: "flex space-x-2" },
