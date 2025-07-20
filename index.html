@@ -197,40 +197,94 @@
             return curriculumData;
           };
 
-          // VB-MAPP 마일스톤 분석
+          // VB-MAPP 마일스톤 분석 (영역별 전체 항목 기준)
           const getVBMAPPMilestones = (childId) => {
             const childActivities = activities.filter(activity => activity.childId === childId);
-            const milestoneData = {};
+            const areaData = {};
             
             // VB-MAPP 마일스톤 목표들 (M으로 끝나는 항목들)
             const milestoneGoals = goals.filter(goal => 
               goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M')
             );
             
-            // 각 마일스톤별 전체 개수 계산
+            // 각 영역별 전체 마일스톤 개수 계산 (1-M~15-M 범위에서)
             milestoneGoals.forEach(goal => {
-              const milestoneLevel = goal.itemNumber.split('-')[0]; // 1, 2, 3, 4, 5
-              if (!milestoneData[milestoneLevel]) {
-                milestoneData[milestoneLevel] = {
+              if (!areaData[goal.area]) {
+                areaData[goal.area] = {
                   total: 0,
-                  completed: 0
+                  completed: 0,
+                  maxLevel: 0
                 };
               }
-              milestoneData[milestoneLevel].total++;
+              
+              // 항목번호에서 숫자 추출 (예: "1-M" -> 1)
+              const levelNum = parseInt(goal.itemNumber.split('-')[0]);
+              if (levelNum > areaData[goal.area].maxLevel) {
+                areaData[goal.area].maxLevel = levelNum;
+              }
+            });
+            
+            // 각 영역의 전체 가능한 마일스톤 수 계산
+            Object.keys(areaData).forEach(area => {
+              // 실제 데이터에서 최고 레벨을 기준으로 1부터 최고레벨까지가 전체 개수
+              areaData[area].total = areaData[area].maxLevel;
             });
             
             // 완료된 마일스톤 계산
             childActivities.forEach(activity => {
               const goal = goals.find(g => g.id === activity.goalId);
               if (goal && goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M') && activity.status === '완료') {
-                const milestoneLevel = goal.itemNumber.split('-')[0];
-                if (milestoneData[milestoneLevel]) {
-                  milestoneData[milestoneLevel].completed++;
+                if (areaData[goal.area]) {
+                  areaData[goal.area].completed++;
                 }
               }
             });
             
-            return milestoneData;
+            return areaData;
+          };
+
+          // VB-MAPP 레벨별 분석 (1-5: Level1, 6-10: Level2, 11-15: Level3)
+          const getVBMAPPLevels = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const levelData = {
+              'Level 1 (1-5)': { total: 0, completed: 0 },
+              'Level 2 (6-10)': { total: 0, completed: 0 },
+              'Level 3 (11-15)': { total: 0, completed: 0 }
+            };
+            
+            // VB-MAPP 마일스톤 목표들 (M으로 끝나는 항목들)
+            const milestoneGoals = goals.filter(goal => 
+              goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M')
+            );
+            
+            // 각 레벨별 전체 개수 계산
+            milestoneGoals.forEach(goal => {
+              const levelNum = parseInt(goal.itemNumber.split('-')[0]);
+              if (levelNum >= 1 && levelNum <= 5) {
+                levelData['Level 1 (1-5)'].total++;
+              } else if (levelNum >= 6 && levelNum <= 10) {
+                levelData['Level 2 (6-10)'].total++;
+              } else if (levelNum >= 11 && levelNum <= 15) {
+                levelData['Level 3 (11-15)'].total++;
+              }
+            });
+            
+            // 완료된 마일스톤 계산
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal && goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M') && activity.status === '완료') {
+                const levelNum = parseInt(goal.itemNumber.split('-')[0]);
+                if (levelNum >= 1 && levelNum <= 5) {
+                  levelData['Level 1 (1-5)'].completed++;
+                } else if (levelNum >= 6 && levelNum <= 10) {
+                  levelData['Level 2 (6-10)'].completed++;
+                } else if (levelNum >= 11 && levelNum <= 15) {
+                  levelData['Level 3 (11-15)'].completed++;
+                }
+              }
+            });
+            
+            return levelData;
           };
 
           const getCurriculumAreaAnalysis = (childId, curriculum) => {
@@ -1107,7 +1161,8 @@
             const { curriculum, childId } = showCurriculumDetail;
             const child = children.find(c => c.id === childId);
             const areaData = getCurriculumAreaAnalysis(childId, curriculum);
-            const milestoneData = curriculum === 'VB-MAPP' ? getVBMAPPMilestones(childId) : null;
+            const milestoneAreaData = curriculum === 'VB-MAPP' ? getVBMAPPMilestones(childId) : null;
+            const levelData = curriculum === 'VB-MAPP' ? getVBMAPPLevels(childId) : null;
             
             return React.createElement('div', { 
               className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50",
@@ -1140,13 +1195,12 @@
                   }, '×')
                 ),
                 
-                // VB-MAPP 마일스톤 차트 (VB-MAPP인 경우만)
-                milestoneData && Object.keys(milestoneData).length > 0 && React.createElement('div', { className: "mb-8" },
-                  React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, 'VB-MAPP 마일스톤 달성 현황'),
+                // VB-MAPP 레벨별 마일스톤 차트
+                levelData && Object.keys(levelData).length > 0 && React.createElement('div', { className: "mb-8" },
+                  React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, 'VB-MAPP 레벨별 마일스톤 달성 현황'),
                   React.createElement('div', { className: "bg-gray-50 rounded-lg p-6" },
                     React.createElement('div', { className: "flex items-end justify-center space-x-8 h-64" },
-                      Object.entries(milestoneData)
-                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                      Object.entries(levelData)
                         .map(([level, data]) => {
                           const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
                           const maxHeight = 200; // 최대 높이
@@ -1163,7 +1217,7 @@
                               `${progressRate}%`
                             ),
                             React.createElement('div', { 
-                              className: "w-12 bg-gray-200 rounded-t-lg flex flex-col justify-end",
+                              className: "w-16 bg-gray-200 rounded-t-lg flex flex-col justify-end",
                               style: { height: `${maxHeight}px` }
                             },
                               React.createElement('div', { 
@@ -1176,8 +1230,49 @@
                                 style: { height: `${barHeight}px` }
                               })
                             ),
-                            React.createElement('div', { className: "text-sm font-semibold text-gray-700 mt-2" },
-                              `Level ${level}`
+                            React.createElement('div', { className: "text-sm font-semibold text-gray-700 mt-2 text-center" },
+                              level
+                            )
+                          );
+                        })
+                    )
+                  )
+                ),
+                
+                // VB-MAPP 영역별 마일스톤 달성 현황
+                milestoneAreaData && Object.keys(milestoneAreaData).length > 0 && React.createElement('div', { className: "mb-8" },
+                  React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, 'VB-MAPP 영역별 마일스톤 달성 현황'),
+                  React.createElement('div', { className: "bg-gray-50 rounded-lg p-6" },
+                    React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" },
+                      Object.entries(milestoneAreaData)
+                        .sort(([, a], [, b]) => b.total - a.total)
+                        .map(([area, data]) => {
+                          const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                          
+                          return React.createElement('div', { 
+                            key: area,
+                            className: "bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
+                          },
+                            React.createElement('div', { className: "text-center mb-3" },
+                              React.createElement('h4', { className: "font-semibold text-gray-800 text-sm mb-1" }, area),
+                              React.createElement('div', { className: "text-lg font-bold text-gray-800" }, 
+                                `${data.completed}/${data.total}`
+                              ),
+                              React.createElement('div', { className: "text-xs text-gray-600" }, 
+                                `${progressRate}%`
+                              )
+                            ),
+                            
+                            React.createElement('div', { className: "w-full bg-gray-200 rounded-full h-2" },
+                              React.createElement('div', { 
+                                className: `h-2 rounded-full transition-all duration-500 ${
+                                  progressRate >= 80 ? 'bg-green-500' :
+                                  progressRate >= 60 ? 'bg-blue-500' :
+                                  progressRate >= 40 ? 'bg-yellow-500' :
+                                  progressRate >= 20 ? 'bg-orange-500' : 'bg-red-400'
+                                }`,
+                                style: { width: `${progressRate}%` }
+                              })
                             )
                           );
                         })
@@ -1187,7 +1282,7 @@
                 
                 Object.keys(areaData).length > 0 
                   ? React.createElement('div', null,
-                      React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, '영역별 상세 현황'),
+                      React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, '영역별 전체 목표 현황'),
                       React.createElement('div', { className: "grid grid-cols-1 gap-6" },
                         Object.entries(areaData)
                           .sort(([, a], [, b]) => b.total - a.total)
