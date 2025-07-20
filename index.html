@@ -192,6 +192,7 @@
           const [uploadingGoals, setUploadingGoals] = useState(false);
           const [duplicateGoals, setDuplicateGoals] = useState([]);
           const [selectedCurriculum, setSelectedCurriculum] = useState('ALL'); // 커리큘럼 필터
+          const [showCurriculumDetail, setShowCurriculumDetail] = useState(null); // 커리큘럼 상세 보기
 
           useEffect(() => {
             try {
@@ -250,6 +251,37 @@
             });
             
             return curriculumData;
+          };
+
+          // 커리큘럼별 영역 분석
+          const getCurriculumAreaAnalysis = (childId, curriculum) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const areaData = {};
+            
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal && goal.curriculum === curriculum) {
+                if (!areaData[goal.area]) {
+                  areaData[goal.area] = {
+                    total: 0,
+                    completed: 0,
+                    inProgress: 0,
+                    onHold: 0
+                  };
+                }
+                
+                areaData[goal.area].total++;
+                if (activity.status === '완료') {
+                  areaData[goal.area].completed++;
+                } else if (activity.status === '진행중') {
+                  areaData[goal.area].inProgress++;
+                } else if (activity.status === '보류') {
+                  areaData[goal.area].onHold++;
+                }
+              }
+            });
+            
+            return areaData;
           };
 
           const updateGoalStatus = (activityId, newStatus) => {
@@ -715,7 +747,8 @@
                       const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
                       return React.createElement('div', { 
                         key: curriculum, 
-                        className: "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4" 
+                        className: "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow",
+                        onClick: () => setShowCurriculumDetail({ curriculum, childId: selectedChild.id })
                       },
                         React.createElement('div', { className: "flex items-center justify-between mb-2" },
                           React.createElement('span', { className: "font-medium text-blue-800" }, curriculum),
@@ -743,6 +776,9 @@
                         ),
                         React.createElement('div', { className: "mt-2 text-center text-xs text-gray-600" },
                           `총 ${data.total}개 목표`
+                        ),
+                        React.createElement('div', { className: "mt-2 text-center text-xs text-blue-500" },
+                          '클릭하여 영역별 상세보기'
                         )
                       );
                     })
@@ -1076,6 +1112,89 @@
             );
           };
 
+          // 커리큘럼 상세 분석 모달
+          const CurriculumDetailModal = () => {
+            if (!showCurriculumDetail) return null;
+            
+            const { curriculum, childId } = showCurriculumDetail;
+            const child = children.find(c => c.id === childId);
+            const areaData = getCurriculumAreaAnalysis(childId, curriculum);
+            
+            return React.createElement('div', { 
+              className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50",
+              onClick: () => setShowCurriculumDetail(null)
+            },
+              React.createElement('div', { 
+                className: "bg-white rounded-lg p-6 max-w-4xl w-full m-4 max-h-96 overflow-y-auto",
+                onClick: (e) => e.stopPropagation()
+              },
+                React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                  React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, 
+                    `${child?.name} - ${curriculum} 영역별 분석`
+                  ),
+                  React.createElement('button', {
+                    onClick: () => setShowCurriculumDetail(null),
+                    className: "text-gray-500 hover:text-gray-700 text-xl font-bold"
+                  }, '×')
+                ),
+                
+                Object.keys(areaData).length > 0 
+                  ? React.createElement('div', { className: "space-y-4" },
+                      Object.entries(areaData).map(([area, data]) => {
+                        const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                        const maxWidth = Math.max(...Object.values(areaData).map(d => d.total));
+                        const barWidth = (data.total / maxWidth) * 100;
+                        
+                        return React.createElement('div', { 
+                          key: area,
+                          className: "border rounded-lg p-4 bg-gray-50"
+                        },
+                          React.createElement('div', { className: "flex justify-between items-center mb-2" },
+                            React.createElement('h3', { className: "font-medium text-gray-800" }, area),
+                            React.createElement('span', { className: "text-sm text-gray-600" }, 
+                              `${data.completed}/${data.total} (${progressRate}%)`
+                            )
+                          ),
+                          
+                          React.createElement('div', { className: "relative" },
+                            React.createElement('div', { 
+                              className: "bg-gray-200 rounded-full h-6 relative",
+                              style: { width: `${barWidth}%`, minWidth: '100px' }
+                            },
+                              React.createElement('div', { 
+                                className: "bg-green-500 h-6 rounded-full flex items-center justify-center text-xs text-white font-semibold",
+                                style: { width: `${progressRate}%` }
+                              }, progressRate > 15 ? `${progressRate}%` : ''),
+                              progressRate <= 15 && React.createElement('span', { 
+                                className: "absolute right-2 top-0 h-6 flex items-center text-xs text-gray-600 font-semibold"
+                              }, `${progressRate}%`)
+                            )
+                          ),
+                          
+                          React.createElement('div', { className: "grid grid-cols-3 gap-2 mt-3 text-xs text-center" },
+                            React.createElement('div', { className: "bg-green-100 text-green-700 rounded py-1" },
+                              React.createElement('div', { className: "font-semibold" }, data.completed),
+                              React.createElement('div', null, '완료')
+                            ),
+                            React.createElement('div', { className: "bg-blue-100 text-blue-700 rounded py-1" },
+                              React.createElement('div', { className: "font-semibold" }, data.inProgress),
+                              React.createElement('div', null, '진행중')
+                            ),
+                            React.createElement('div', { className: "bg-orange-100 text-orange-700 rounded py-1" },
+                              React.createElement('div', { className: "font-semibold" }, data.onHold),
+                              React.createElement('div', null, '보류')
+                            )
+                          )
+                        );
+                      })
+                    )
+                  : React.createElement('div', { className: "text-center py-8 text-gray-500" },
+                      '해당 커리큘럼의 목표가 할당되지 않았습니다.'
+                    )
+              )
+            );
+          };
+
           const GoalsTab = () => {
             const filteredGoals = goals.filter(goal => 
               goal.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1232,7 +1351,10 @@
               currentTab === 'dashboard' && DashboardTab(),
               currentTab === 'goals' && GoalsTab(),
               currentTab === 'childDetail' && ChildDetailTab()
-            )
+            ),
+
+            // 커리큘럼 상세 분석 모달
+            CurriculumDetailModal()
           );
         };
 
