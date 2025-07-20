@@ -14,6 +14,9 @@
     <!-- Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
     
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <!-- Lucide Icons (React 버전) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
@@ -34,6 +37,7 @@
         const Check = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '✓');
         const Pause = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '||');
         const Play = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▶');
+        const Download = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-green-600 rounded flex items-center justify-center text-white text-xs font-bold` }, '↓');
 
         // 30개 VB-MAPP 테스트 데이터
         const sampleGoals = [
@@ -163,6 +167,97 @@
             setActivities(prev => [...prev, newActivity]);
           };
 
+          // 엑셀 다운로드 함수
+          const downloadExcel = (data, filename, status) => {
+            try {
+              // 워크북 생성
+              const wb = XLSX.utils.book_new();
+              
+              // 데이터 준비
+              const excelData = data.map(activity => {
+                const goal = goals.find(g => g.id === activity.goalId);
+                const child = children.find(c => c.id === activity.childId);
+                const therapist = therapists.find(t => t.id === child?.therapistId);
+                
+                return {
+                  '아동명': child?.name || '',
+                  '성별': child?.gender || '',
+                  '생년월일': child?.birthDate || '',
+                  '담당치료사': therapist?.name || '',
+                  '영역': goal?.area || '',
+                  '항목번호': goal?.itemNumber || '',
+                  '목표내용': goal?.content || '',
+                  '시작일': activity.startDate || '',
+                  '완료일': activity.completedDate || '',
+                  '상태': activity.status || '',
+                  '메모': activity.memo || ''
+                };
+              });
+
+              // 워크시트 생성
+              const ws = XLSX.utils.json_to_sheet(excelData);
+              
+              // 컬럼 너비 설정
+              ws['!cols'] = [
+                { width: 10 }, // 아동명
+                { width: 8 },  // 성별
+                { width: 12 }, // 생년월일
+                { width: 12 }, // 담당치료사
+                { width: 10 }, // 영역
+                { width: 12 }, // 항목번호
+                { width: 50 }, // 목표내용
+                { width: 12 }, // 시작일
+                { width: 12 }, // 완료일
+                { width: 10 }, // 상태
+                { width: 20 }  // 메모
+              ];
+
+              // 워크북에 워크시트 추가
+              XLSX.utils.book_append_sheet(wb, ws, status || 'Sheet1');
+              
+              // 파일 다운로드
+              XLSX.writeFile(wb, filename);
+              
+            } catch (error) {
+              console.error('엑셀 다운로드 오류:', error);
+              alert('엑셀 다운로드 중 오류가 발생했습니다.');
+            }
+          };
+
+          // 아동별 리포트 다운로드
+          const downloadChildReport = (childId) => {
+            const child = children.find(c => c.id === childId);
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            
+            if (childActivities.length === 0) {
+              alert('다운로드할 데이터가 없습니다.');
+              return;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `${child.name}_VB-MAPP_진행현황_${today}.xlsx`;
+            
+            downloadExcel(childActivities, filename, '전체현황');
+          };
+
+          // 상태별 다운로드
+          const downloadByStatus = (childId, status) => {
+            const child = children.find(c => c.id === childId);
+            const childActivities = activities.filter(activity => 
+              activity.childId === childId && activity.status === status
+            );
+            
+            if (childActivities.length === 0) {
+              alert('다운로드할 데이터가 없습니다.');
+              return;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `${child.name}_${status}_목표_${today}.xlsx`;
+            
+            downloadExcel(childActivities, filename, status);
+          };
+
           const DashboardTab = () => (
             React.createElement('div', { className: "space-y-6" },
               React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
@@ -212,10 +307,17 @@
                         `담당: ${therapist?.name}`
                       ),
                       
-                      React.createElement('button', {
-                        onClick: () => {setSelectedChild(child); setCurrentTab('childDetail');},
-                        className: "w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
-                      }, '상세 관리')
+                      React.createElement('div', { className: "flex space-x-2" },
+                        React.createElement('button', {
+                          onClick: () => {setSelectedChild(child); setCurrentTab('childDetail');},
+                          className: "flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
+                        }, '상세 관리'),
+                        React.createElement('button', {
+                          onClick: () => downloadChildReport(child.id),
+                          className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition-colors",
+                          title: "엑셀 다운로드"
+                        }, React.createElement(Download, { className: "" }))
+                      )
                     )
                   );
                 })
@@ -234,10 +336,19 @@
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
                 React.createElement('div', { className: "flex items-center justify-between mb-4" },
                   React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, `${selectedChild.name} 목표 관리`),
-                  React.createElement('button', {
-                    onClick: () => setCurrentTab('dashboard'),
-                    className: "text-blue-500 hover:text-blue-700"
-                  }, '← 돌아가기')
+                  React.createElement('div', { className: "flex space-x-2" },
+                    React.createElement('button', {
+                      onClick: () => downloadChildReport(selectedChild.id),
+                      className: "bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors flex items-center space-x-2"
+                    },
+                      React.createElement(Download, { className: "" }),
+                      React.createElement('span', null, '전체 보고서')
+                    ),
+                    React.createElement('button', {
+                      onClick: () => setCurrentTab('dashboard'),
+                      className: "text-blue-500 hover:text-blue-700"
+                    }, '← 돌아가기')
+                  )
                 ),
                 
                 React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" },
@@ -268,7 +379,16 @@
 
               // 진행중인 목표들
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
-                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '진행중인 목표'),
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '진행중인 목표'),
+                  React.createElement('button', {
+                    onClick: () => downloadByStatus(selectedChild.id, '진행중'),
+                    className: "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors flex items-center space-x-1"
+                  },
+                    React.createElement(Download, { className: "" }),
+                    React.createElement('span', { className: "text-sm" }, '엑셀')
+                  )
+                ),
                 React.createElement('div', { className: "space-y-3" },
                   childActivities
                     .filter(activity => activity.status === '진행중')
@@ -308,7 +428,16 @@
 
               // 완료된 목표들
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
-                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '완료된 목표'),
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '완료된 목표'),
+                  React.createElement('button', {
+                    onClick: () => downloadByStatus(selectedChild.id, '완료'),
+                    className: "bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors flex items-center space-x-1"
+                  },
+                    React.createElement(Download, { className: "" }),
+                    React.createElement('span', { className: "text-sm" }, '엑셀')
+                  )
+                ),
                 React.createElement('div', { className: "space-y-3" },
                   childActivities
                     .filter(activity => activity.status === '완료')
@@ -339,7 +468,16 @@
 
               // 보류된 목표들
               React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
-                React.createElement('h3', { className: "text-lg font-semibold mb-4" }, '보류된 목표'),
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '보류된 목표'),
+                  React.createElement('button', {
+                    onClick: () => downloadByStatus(selectedChild.id, '보류'),
+                    className: "bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600 transition-colors flex items-center space-x-1"
+                  },
+                    React.createElement(Download, { className: "" }),
+                    React.createElement('span', { className: "text-sm" }, '엑셀')
+                  )
+                ),
                 React.createElement('div', { className: "space-y-3" },
                   childActivities
                     .filter(activity => activity.status === '보류')
