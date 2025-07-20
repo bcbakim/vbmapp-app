@@ -43,7 +43,7 @@
         const Plus = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '+');
         const Upload = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-white text-xs font-bold` }, '↑');
 
-        // 30개 VB-MAPP 테스트 데이터
+        // 30개 VB-MAPP 테스트 데이터 (수정됨)
         const sampleGoals = [
           { id: 'VB001', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-a*', content: '관심 혹은 다른 강화제의 맨드의 표현으로 2차례 눈맞춤을 제공한다(시선을 옮긴다). (관)' },
           { id: 'VB002', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-b*', content: 'MO의 통제로 선호 사물에 2차례 접근한다. (관)' },
@@ -65,15 +65,7 @@
           { id: 'VB018', curriculum: 'VB-MAPP', area: '시각적인식/매칭', itemNumber: '1-a', content: '동일한 물건 3개를 매칭한다.(양)' },
           { id: 'VB019', curriculum: 'VB-MAPP', area: '시각적인식/매칭', itemNumber: '1-M', content: '1. 그림과 물건을 매칭한다(예: 실제 신발과 신발 그림).(양)' },
           { id: 'VB020', curriculum: 'VB-MAPP', area: '시각적인식/매칭', itemNumber: '2-M', content: '2. 6개의 동일한 물건을 매칭한다.(양)' },
-          { id: 'VB021', curriculum: 'VB-MAPP', area: '독립적놀이', itemNumber: '1-M', content: '1. 2분 동안 혼자서 놀이 활동에 참여한다.(양)' },,
-          { id: 'VB022', curriculum: 'VB-MAPP', area: '독립적놀이', itemNumber: '2-M', content: '2. 완구나 놀이기구를 적절하게 조작한다.(양)' },
-          { id: 'VB023', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '1-M', content: '1. 또래와 함께 2분 동안 놀이에 참여한다.(양)' },
-          { id: 'VB024', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '2-M', content: '2. 성인과의 사회적 상호작용에 참여한다.(양)' },
-          { id: 'VB025', curriculum: 'VB-MAPP', area: '모터모방', itemNumber: '1-M', content: '1. 8개의 조동작 동작을 모방한다.(양)' },
-          { id: 'VB026', curriculum: 'VB-MAPP', area: '모터모방', itemNumber: '2-M', content: '2. 물건을 이용한 동작을 모방한다.(양)' },
-          { id: 'VB027', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '1-M', content: '1. 아무 단어나 2차례 에코익 반응을 보인다.(양)' },
-          { id: 'VB028', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '2-M', content: '2. 5개의 1음절 단어를 에코익한다.(양)' },
-          { id: 'VB029', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '1-M', content: '1. 15분 동안 최소 5개의 다른 음성을 자발적으로 낸다.(양)' },
+          { id: 'VB021', curriculum: 'VB-MAPP', area: '독립적놀이', itemNumber: '1-M', content: '1. 2분 동안 혼자서 놀이 활동에 참여한다.(양)' },
           { id: 'VB022', curriculum: 'VB-MAPP', area: '독립적놀이', itemNumber: '2-M', content: '2. 완구나 놀이기구를 적절하게 조작한다.(양)' },
           { id: 'VB023', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '1-M', content: '1. 또래와 함께 2분 동안 놀이에 참여한다.(양)' },
           { id: 'VB024', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '2-M', content: '2. 성인과의 사회적 상호작용에 참여한다.(양)' },
@@ -83,15 +75,6 @@
           { id: 'VB028', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '2-M', content: '2. 5개의 1음절 단어를 에코익한다.(양)' },
           { id: 'VB029', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '1-M', content: '1. 15분 동안 최소 5개의 다른 음성을 자발적으로 낸다.(양)' },
           { id: 'VB030', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '2-M', content: '2. 하루 종일 다양한 음성을 자발적으로 낸다.(양)' }
-        ];: '독립적놀이', itemNumber: '1-b', content: '완구나 놀이기구를 적절하게 조작한다.(양)' },
-          { id: 'VB023', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '1-a', content: '또래와 함께 2분 동안 놀이에 참여한다.(양)' },
-          { id: 'VB024', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '1-b', content: '성인과의 사회적 상호작용에 참여한다.(양)' },
-          { id: 'VB025', curriculum: 'VB-MAPP', area: '모터모방', itemNumber: '1-a', content: '8개의 조동작 동작을 모방한다.(양)' },
-          { id: 'VB026', curriculum: 'VB-MAPP', area: '모터모방', itemNumber: '1-b', content: '물건을 이용한 동작을 모방한다.(양)' },
-          { id: 'VB027', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '1-a', content: '아무 단어나 2차례 에코익 반응을 보인다.(양)' },
-          { id: 'VB028', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '1-b', content: '5개의 1음절 단어를 에코익한다.(양)' },
-          { id: 'VB029', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '1-a', content: '15분 동안 최소 5개의 다른 음성을 자발적으로 낸다.(양)' },
-          { id: 'VB030', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '1-b', content: '하루 종일 다양한 음성을 자발적으로 낸다.(양)' }
         ];
 
         const sampleChildren = [
@@ -163,39 +146,9 @@
           const [currentTab, setCurrentTab] = useState('dashboard');
           const [selectedChild, setSelectedChild] = useState(null);
           const [searchTerm, setSearchTerm] = useState('');
-          const [goals, setGoals] = useState(() => {
-            try {
-              const saved = localStorage.getItem('vbmapp-goals');
-              return saved ? JSON.parse(saved) : sampleGoals;
-            } catch (e) {
-              return sampleGoals;
-            }
-          });
-          const [children, setChildren] = useState(() => {
-            try {
-              const saved = localStorage.getItem('vbmapp-children');
-              return saved ? JSON.parse(saved) : sampleChildren;
-            } catch (e) {
-              return sampleChildren;
-            }
-          });
-          const [activities, setActivities] = useState(() => {
-            try {
-              const saved = localStorage.getItem('vbmapp-activities');
-              if (saved) {
-                const parsedData = JSON.parse(saved);
-                // 기존 데이터에 subItems가 없는 경우 빈 배열로 초기화
-                const migratedData = parsedData.map(activity => ({
-                  ...activity,
-                  subItems: activity.subItems || []
-                }));
-                return migratedData;
-              }
-              return sampleActivities;
-            } catch (e) {
-              return sampleActivities;
-            }
-          });
+          const [goals, setGoals] = useState(sampleGoals);
+          const [children, setChildren] = useState(sampleChildren);
+          const [activities, setActivities] = useState(sampleActivities);
           const [therapists, setTherapists] = useState(sampleTherapists);
           const [expandedItems, setExpandedItems] = useState({});
           const [addingItemTo, setAddingItemTo] = useState(null);
@@ -204,30 +157,6 @@
           const [duplicateGoals, setDuplicateGoals] = useState([]);
           const [selectedCurriculum, setSelectedCurriculum] = useState('ALL'); // 커리큘럼 필터
           const [showCurriculumDetail, setShowCurriculumDetail] = useState(null); // 커리큘럼 상세 보기
-
-          useEffect(() => {
-            try {
-              localStorage.setItem('vbmapp-activities', JSON.stringify(activities));
-            } catch (e) {
-              console.log('localStorage 저장 실패');
-            }
-          }, [activities]);
-
-          useEffect(() => {
-            try {
-              localStorage.setItem('vbmapp-children', JSON.stringify(children));
-            } catch (e) {
-              console.log('localStorage 저장 실패');
-            }
-          }, [children]);
-
-          useEffect(() => {
-            try {
-              localStorage.setItem('vbmapp-goals', JSON.stringify(goals));
-            } catch (e) {
-              console.log('localStorage 저장 실패');
-            }
-          }, [goals]);
 
           const getChildProgress = (childId) => {
             const childActivities = activities.filter(activity => activity.childId === childId);
@@ -303,6 +232,7 @@
             
             return milestoneData;
           };
+
           const getCurriculumAreaAnalysis = (childId, curriculum) => {
             const childActivities = activities.filter(activity => activity.childId === childId);
             const areaData = {};
@@ -373,7 +303,6 @@
               subItems: []
             };
             setActivities(prev => [...prev, newActivity]);
-            // 성공 팝업만 제거
           };
 
           // 세부 항목 관련 함수들
