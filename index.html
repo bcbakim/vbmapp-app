@@ -6,22 +6,686 @@
     <title>VB-MAPP 관리 시스템</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React 및 관련 라이브러리 -->
+    
+    <!-- React 및 관련 라이브러리 - 순서가 중요! -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
     <!-- Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+    
     <!-- SheetJS for Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <!-- Lucide Icons (React 버전) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
     <div id="root"></div>
+
     <script type="text/babel">
-        // ... (상단 생략, 전체 코드 동일)
-        // 변경사항은 DashboardTab() 함수 내!
-        const DashboardTab = () => (
+        const { useState, useEffect } = React;
+        
+        // Lucide 아이콘들 (단순화)
+        const User = () => React.createElement('div', { className: 'w-6 h-6 bg-gray-600 rounded-full' });
+        const Target = ({ className, size }) => React.createElement('div', { 
+            className: `${className} ${size ? `w-${size/4} h-${size/4}` : 'w-8 h-8'} bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xs` 
+        }, 'VB');
+        const Users = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-600 rounded` });
+        const BarChart3 = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-600 rounded` });
+        const Search = ({ className, size }) => React.createElement('div', { className: `${className} w-5 h-5 bg-gray-400 rounded` });
+        const Check = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '✓');
+        const Pause = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '||');
+        const Play = ({ size }) => React.createElement('div', { className: `w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▶');
+        const Download = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-green-600 rounded flex items-center justify-center text-white text-xs font-bold` }, '↓');
+        const ChevronDown = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▼');
+        const ChevronUp = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '▲');
+        const Plus = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold` }, '+');
+        const Upload = ({ className }) => React.createElement('div', { className: `${className} w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-white text-xs font-bold` }, '↑');
+
+        // 30개 VB-MAPP 테스트 데이터 (수정됨)
+        const sampleGoals = [
+          { id: 'VB001', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-a*', content: '관심 혹은 다른 강화제의 맨드의 표현으로 2차례 눈맞춤을 제공한다(시선을 옮긴다). (관)' },
+          { id: 'VB002', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-b*', content: 'MO의 통제로 선호 사물에 2차례 접근한다. (관)' },
+          { id: 'VB003', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-c*', content: '선호 사물을 얻으려고 다른 사람 손을 2차례 이끈다. (관)' },
+          { id: 'VB004', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-d*', content: '강화제를 얻으려고 2차례 포인트 하거나 혹은 손짓을 한다. (관)' },
+          { id: 'VB005', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '1-M', content: '1. 신체적 촉구 없이(에코익 촉구, 모방촉구 손짓 촉구 등은 허용) 2개의 단어, 수화 혹은 그림선택의 반응형태를 사용하여 맨드 한다(예: 과자, 책) (양)' },
+          { id: 'VB006', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-a*', content: '2가지 강화제를 얻으려고 각각2차례 포인트 한다.(양)' },
+          { id: 'VB007', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-b*', content: '강화제를 제시할 때 2차례 "예/아니오"를 말하거나 고개를 끄덕인다.(조기 목표가 아니다).(양)' },
+          { id: 'VB008', curriculum: 'VB-MAPP', area: '맨드', itemNumber: '2-M', content: '2. 촉구 없이 적어도 4가지 맨드 허용 (무엇을 원하니?는 허용) 표현한다. 선호 사물을 보여줘도 좋다 (예: 음악, 공, 슬링키 등) (양)' },
+          { id: 'VB009', curriculum: 'VB-MAPP', area: '택트', itemNumber: '1-a', content: '언어 촉구와 MO가 있을 때, 익숙한 사람, 애완동물 혹은 물품을 한 차례 택트 한다(예: "엄마").(양)' },
+          { id: 'VB010', curriculum: 'VB-MAPP', area: '택트', itemNumber: '1-M', content: '1. 에코익 또는 모방촉구를 받고 2개의 대상물을 택트한다. (e.g., 사람, 애완동물들, 캐릭터들 또는 좋아하는 사물들) (직)' },
+          { id: 'VB011', curriculum: 'VB-MAPP', area: '택트', itemNumber: '2-a', content: '4개의 비슷하지 않은 항목을 택트한다(예를 들어 신발, 모자, 컵, 자동차).(양)' },
+          { id: 'VB012', curriculum: 'VB-MAPP', area: '택트', itemNumber: '2-M', content: '2. 에코익 촉구 없이 4개 항목을 택트한다.(양)' },
+          { id: 'VB013', curriculum: 'VB-MAPP', area: '택트', itemNumber: '3-M', content: '3. 10개의 항목을 택트한다.(양)' },
+          { id: 'VB014', curriculum: 'VB-MAPP', area: '청자반응', itemNumber: '1-a', content: '간단한 동작 모방을 2차례 보여준다(예: 박수치기, 팔 흔들기).(양)' },
+          { id: 'VB015', curriculum: 'VB-MAPP', area: '청자반응', itemNumber: '1-M', content: '1. 언어지시에 따라 간단한 동작을 2차례 실행한다(예: "앉아", "이리와").(양)' },
+          { id: 'VB016', curriculum: 'VB-MAPP', area: '청자반응', itemNumber: '2-a', content: '4개의 다른 동작 모방을 보여준다.(양)' },
+          { id: 'VB017', curriculum: 'VB-MAPP', area: '청자반응', itemNumber: '2-M', content: '2. 언어지시에 따라 4개의 다른 동작을 실행한다.(양)' },
+          { id: 'VB018', curriculum: 'VB-MAPP', area: '시각적인식/매칭', itemNumber: '1-a', content: '동일한 물건 3개를 매칭한다.(양)' },
+          { id: 'VB019', curriculum: 'VB-MAPP', area: '시각적인식/매칭', itemNumber: '1-M', content: '1. 그림과 물건을 매칭한다(예: 실제 신발과 신발 그림).(양)' },
+          { id: 'VB020', curriculum: 'VB-MAPP', area: '시각적인식/매칭', itemNumber: '2-M', content: '2. 6개의 동일한 물건을 매칭한다.(양)' },
+          { id: 'VB021', curriculum: 'VB-MAPP', area: '독립적놀이', itemNumber: '1-M', content: '1. 2분 동안 혼자서 놀이 활동에 참여한다.(양)' },
+          { id: 'VB022', curriculum: 'VB-MAPP', area: '독립적놀이', itemNumber: '2-M', content: '2. 완구나 놀이기구를 적절하게 조작한다.(양)' },
+          { id: 'VB023', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '1-M', content: '1. 또래와 함께 2분 동안 놀이에 참여한다.(양)' },
+          { id: 'VB024', curriculum: 'VB-MAPP', area: '사회적놀이/상호작용', itemNumber: '2-M', content: '2. 성인과의 사회적 상호작용에 참여한다.(양)' },
+          { id: 'VB025', curriculum: 'VB-MAPP', area: '모터모방', itemNumber: '1-M', content: '1. 8개의 조동작 동작을 모방한다.(양)' },
+          { id: 'VB026', curriculum: 'VB-MAPP', area: '모터모방', itemNumber: '2-M', content: '2. 물건을 이용한 동작을 모방한다.(양)' },
+          { id: 'VB027', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '1-M', content: '1. 아무 단어나 2차례 에코익 반응을 보인다.(양)' },
+          { id: 'VB028', curriculum: 'VB-MAPP', area: '에코익', itemNumber: '2-M', content: '2. 5개의 1음절 단어를 에코익한다.(양)' },
+          { id: 'VB029', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '1-M', content: '1. 15분 동안 최소 5개의 다른 음성을 자발적으로 낸다.(양)' },
+          { id: 'VB030', curriculum: 'VB-MAPP', area: '자발적음성행동', itemNumber: '2-M', content: '2. 하루 종일 다양한 음성을 자발적으로 낸다.(양)' }
+        ];
+
+        const sampleChildren = [
+          { id: 'C001', name: '차명진', gender: '여', birthDate: '2019-05-10', therapistId: 'T01', registrationDate: '2024-01-10', memo: '' },
+          { id: 'C002', name: '차건희', gender: '남', birthDate: '2020-03-14', therapistId: 'T02', registrationDate: '2024-01-15', memo: '' },
+          { id: 'C003', name: '박서진', gender: '남', birthDate: '2018-11-02', therapistId: 'T03', registrationDate: '2024-01-15', memo: '' }
+        ];
+
+        const sampleTherapists = [
+          { id: 'T01', name: '김해미', email: 'happy2j3@gmail.com', registrationDate: '2021-09-21' },
+          { id: 'T02', name: '고민지', email: 'minjigo@simplestepaba.com', registrationDate: '2024-03-01' },
+          { id: 'T03', name: '손진선', email: 'jinsunson@simplestepaba.com', registrationDate: '2021-09-21' }
+        ];
+
+        const sampleActivities = [
+          { 
+            id: 'G001', 
+            childId: 'C001', 
+            goalId: 'VB005', // 맨드 1-M
+            startDate: '2024-01-15', 
+            completedDate: '2024-01-25', 
+            status: '완료', 
+            memo: '잘 따라함',
+            subItems: []
+          },
+          { 
+            id: 'G002', 
+            childId: 'C001', 
+            goalId: 'VB008', // 맨드 2-M
+            startDate: '2024-01-20', 
+            completedDate: '2024-02-10', 
+            status: '완료', 
+            memo: '',
+            subItems: []
+          },
+          { 
+            id: 'G003', 
+            childId: 'C001', 
+            goalId: 'VB010', // 택트 1-M
+            startDate: '2024-01-25', 
+            completedDate: '2024-02-15', 
+            status: '완료', 
+            memo: '',
+            subItems: []
+          },
+          { 
+            id: 'G004', 
+            childId: 'C001', 
+            goalId: 'VB015', // 청자반응 1-M
+            startDate: '2024-02-01', 
+            completedDate: '', 
+            status: '진행중', 
+            memo: '',
+            subItems: []
+          },
+          { 
+            id: 'G005', 
+            childId: 'C001', 
+            goalId: 'VB019', // 시각적인식 1-M
+            startDate: '2024-02-05', 
+            completedDate: '2024-02-20', 
+            status: '완료', 
+            memo: '',
+            subItems: []
+          }
+        ];
+
+        const VBMAPPApp = () => {
+          const [currentTab, setCurrentTab] = useState('dashboard');
+          const [selectedChild, setSelectedChild] = useState(null);
+          const [searchTerm, setSearchTerm] = useState('');
+          const [goals, setGoals] = useState(() => {
+            try {
+              const saved = localStorage.getItem('vbmapp-goals');
+              return saved ? JSON.parse(saved) : sampleGoals;
+            } catch (e) {
+              return sampleGoals;
+            }
+          });
+          const [children, setChildren] = useState(() => {
+            try {
+              const saved = localStorage.getItem('vbmapp-children');
+              return saved ? JSON.parse(saved) : sampleChildren;
+            } catch (e) {
+              return sampleChildren;
+            }
+          });
+          const [activities, setActivities] = useState(() => {
+            try {
+              const saved = localStorage.getItem('vbmapp-activities');
+              if (saved) {
+                const parsedData = JSON.parse(saved);
+                // 기존 데이터에 subItems가 없는 경우 빈 배열로 초기화
+                const migratedData = parsedData.map(activity => ({
+                  ...activity,
+                  subItems: activity.subItems || []
+                }));
+                return migratedData;
+              }
+              return sampleActivities;
+            } catch (e) {
+              return sampleActivities;
+            }
+          });
+          const [therapists, setTherapists] = useState(sampleTherapists);
+          const [expandedItems, setExpandedItems] = useState({});
+          const [addingItemTo, setAddingItemTo] = useState(null);
+          const [newItemName, setNewItemName] = useState('');
+          const [uploadingGoals, setUploadingGoals] = useState(false);
+          const [duplicateGoals, setDuplicateGoals] = useState([]);
+          const [selectedCurriculum, setSelectedCurriculum] = useState('ALL'); // 커리큘럼 필터
+          const [showCurriculumDetail, setShowCurriculumDetail] = useState(null); // 커리큘럼 상세 보기
+
+          useEffect(() => {
+            try {
+              localStorage.setItem('vbmapp-activities', JSON.stringify(activities));
+            } catch (e) {
+              console.log('localStorage 저장 실패');
+            }
+          }, [activities]);
+
+          useEffect(() => {
+            try {
+              localStorage.setItem('vbmapp-children', JSON.stringify(children));
+            } catch (e) {
+              console.log('localStorage 저장 실패');
+            }
+          }, [children]);
+
+          useEffect(() => {
+            try {
+              localStorage.setItem('vbmapp-goals', JSON.stringify(goals));
+            } catch (e) {
+              console.log('localStorage 저장 실패');
+            }
+          }, [goals]);
+
+          const getChildProgress = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const total = childActivities.length;
+            const completed = childActivities.filter(activity => activity.status === '완료').length;
+            const inProgress = childActivities.filter(activity => activity.status === '진행중').length;
+            const onHold = childActivities.filter(activity => activity.status === '보류').length;
+            
+            return { total, completed, inProgress, onHold, progressRate: total > 0 ? Math.round((completed / total) * 100) : 0 };
+          };
+
+          // 대시보드용 커리큘럼별 진행상황 계산 (전체 커리큘럼 기준)
+          const getChildCurriculums = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const curriculumData = {};
+            
+            // 먼저 각 커리큘럼별 전체 목표 수 계산
+            goals.forEach(goal => {
+              if (!curriculumData[goal.curriculum]) {
+                curriculumData[goal.curriculum] = {
+                  total: 0,
+                  completed: 0
+                };
+              }
+              curriculumData[goal.curriculum].total++;
+            });
+            
+            // 완료된 목표 계산
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal && activity.status === '완료') {
+                if (curriculumData[goal.curriculum]) {
+                  curriculumData[goal.curriculum].completed++;
+                }
+              }
+            });
+            
+            return curriculumData;
+          };
+
+          // VB-MAPP 마일스톤 분석 (영역별 전체 항목 기준)
+          const getVBMAPPMilestones = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const areaData = {};
+            
+            // VB-MAPP 마일스톤 목표들 (M으로 끝나는 항목들)
+            const milestoneGoals = goals.filter(goal => 
+              goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M')
+            );
+            
+            // 각 영역별 전체 마일스톤 개수 계산 (1-M~15-M 범위에서)
+            milestoneGoals.forEach(goal => {
+              if (!areaData[goal.area]) {
+                areaData[goal.area] = {
+                  total: 0,
+                  completed: 0,
+                  maxLevel: 0
+                };
+              }
+              
+              // 항목번호에서 숫자 추출 (예: "1-M" -> 1)
+              const levelNum = parseInt(goal.itemNumber.split('-')[0]);
+              if (levelNum > areaData[goal.area].maxLevel) {
+                areaData[goal.area].maxLevel = levelNum;
+              }
+            });
+            
+            // 각 영역의 전체 가능한 마일스톤 수 계산
+            Object.keys(areaData).forEach(area => {
+              // 실제 데이터에서 최고 레벨을 기준으로 1부터 최고레벨까지가 전체 개수
+              areaData[area].total = areaData[area].maxLevel;
+            });
+            
+            // 완료된 마일스톤 계산
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal && goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M') && activity.status === '완료') {
+                if (areaData[goal.area]) {
+                  areaData[goal.area].completed++;
+                }
+              }
+            });
+            
+            return areaData;
+          };
+
+          // VB-MAPP 레벨별 분석 (1-5: Level1, 6-10: Level2, 11-15: Level3)
+          const getVBMAPPLevels = (childId) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const levelData = {
+              'Level 1 (1-5)': { total: 0, completed: 0 },
+              'Level 2 (6-10)': { total: 0, completed: 0 },
+              'Level 3 (11-15)': { total: 0, completed: 0 }
+            };
+            
+            // VB-MAPP 마일스톤 목표들 (M으로 끝나는 항목들)
+            const milestoneGoals = goals.filter(goal => 
+              goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M')
+            );
+            
+            // 각 레벨별 전체 개수 계산
+            milestoneGoals.forEach(goal => {
+              const levelNum = parseInt(goal.itemNumber.split('-')[0]);
+              if (levelNum >= 1 && levelNum <= 5) {
+                levelData['Level 1 (1-5)'].total++;
+              } else if (levelNum >= 6 && levelNum <= 10) {
+                levelData['Level 2 (6-10)'].total++;
+              } else if (levelNum >= 11 && levelNum <= 15) {
+                levelData['Level 3 (11-15)'].total++;
+              }
+            });
+            
+            // 완료된 마일스톤 계산
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal && goal.curriculum === 'VB-MAPP' && goal.itemNumber.includes('-M') && activity.status === '완료') {
+                const levelNum = parseInt(goal.itemNumber.split('-')[0]);
+                if (levelNum >= 1 && levelNum <= 5) {
+                  levelData['Level 1 (1-5)'].completed++;
+                } else if (levelNum >= 6 && levelNum <= 10) {
+                  levelData['Level 2 (6-10)'].completed++;
+                } else if (levelNum >= 11 && levelNum <= 15) {
+                  levelData['Level 3 (11-15)'].completed++;
+                }
+              }
+            });
+            
+            return levelData;
+          };
+
+          const getCurriculumAreaAnalysis = (childId, curriculum) => {
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            const areaData = {};
+            
+            // 먼저 해당 커리큘럼의 모든 영역과 전체 목표 수 계산
+            goals
+              .filter(goal => goal.curriculum === curriculum)
+              .forEach(goal => {
+                if (!areaData[goal.area]) {
+                  areaData[goal.area] = {
+                    total: 0,
+                    completed: 0,
+                    inProgress: 0,
+                    onHold: 0
+                  };
+                }
+                areaData[goal.area].total++;
+              });
+            
+            // 완료된 목표 계산
+            childActivities.forEach(activity => {
+              const goal = goals.find(g => g.id === activity.goalId);
+              if (goal && goal.curriculum === curriculum && areaData[goal.area]) {
+                if (activity.status === '완료') {
+                  areaData[goal.area].completed++;
+                } else if (activity.status === '진행중') {
+                  areaData[goal.area].inProgress++;
+                } else if (activity.status === '보류') {
+                  areaData[goal.area].onHold++;
+                }
+              }
+            });
+            
+            return areaData;
+          };
+
+          const updateGoalStatus = (activityId, newStatus) => {
+            setActivities(prev => prev.map(activity => 
+              activity.id === activityId 
+                ? { 
+                    ...activity, 
+                    status: newStatus,
+                    completedDate: newStatus === '완료' ? new Date().toISOString().split('T')[0] : ''
+                  }
+                : activity
+            ));
+          };
+
+          const assignGoal = (childId, goalId) => {
+            // 이미 할당된 목표인지 확인
+            const isAlreadyAssigned = activities.some(activity => 
+              activity.childId === childId && activity.goalId === goalId
+            );
+            
+            if (isAlreadyAssigned) {
+              alert('이미 할당된 목표입니다.');
+              return;
+            }
+
+            const newActivity = {
+              id: `G${Date.now()}`,
+              childId,
+              goalId,
+              startDate: new Date().toISOString().split('T')[0],
+              completedDate: '',
+              status: '진행중',
+              memo: '',
+              subItems: []
+            };
+            setActivities(prev => [...prev, newActivity]);
+          };
+
+          // 세부 항목 관련 함수들
+          const toggleExpanded = (activityId) => {
+            setExpandedItems(prev => ({
+              ...prev,
+              [activityId]: !prev[activityId]
+            }));
+          };
+
+          const addSubItem = (activityId) => {
+            setAddingItemTo(activityId);
+            setNewItemName('');
+          };
+
+          const saveNewSubItem = (activityId) => {
+            if (newItemName && newItemName.trim()) {
+              setActivities(prev => prev.map(activity => 
+                activity.id === activityId 
+                  ? {
+                      ...activity,
+                      subItems: [
+                        ...(activity.subItems || []), // 기존 subItems가 undefined일 경우 빈 배열 사용
+                        {
+                          id: `SI${Date.now()}`,
+                          name: newItemName.trim(),
+                          completed: false
+                        }
+                      ]
+                    }
+                  : activity
+              ));
+              setAddingItemTo(null);
+              setNewItemName('');
+            }
+          };
+
+          const cancelAddSubItem = () => {
+            setAddingItemTo(null);
+            setNewItemName('');
+          };
+
+          const toggleSubItem = (activityId, subItemId) => {
+            setActivities(prev => prev.map(activity => 
+              activity.id === activityId 
+                ? {
+                    ...activity,
+                    subItems: (activity.subItems || []).map(item =>
+                      item.id === subItemId
+                        ? { ...item, completed: !item.completed }
+                        : item
+                    )
+                  }
+                : activity
+            ));
+          };
+
+          const removeSubItem = (activityId, subItemId) => {
+            setActivities(prev => prev.map(activity => 
+              activity.id === activityId 
+                ? {
+                    ...activity,
+                    subItems: (activity.subItems || []).filter(item => item.id !== subItemId)
+                  }
+                : activity
+            ));
+          };
+
+          const getSubItemProgress = (subItems) => {
+            if (!subItems || subItems.length === 0) return { completed: 0, total: 0, rate: 0 };
+            const completed = subItems.filter(item => item.completed).length;
+            const total = subItems.length;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return { completed, total, rate };
+          };
+
+          // 엑셀 업로드 처리 함수
+          const handleFileUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                // 엑셀 데이터를 목표 형식으로 변환
+                const newGoals = [];
+                const duplicates = [];
+
+                jsonData.forEach((row, index) => {
+                  // 필수 필드 확인 (커리큘럼 추가)
+                  if (row['영역'] && row['항목번호'] && row['목표내용']) {
+                    const goalId = `${String(row['커리큘럼'] || 'CUSTOM').replace(/[^A-Za-z0-9]/g, '')}${String(Date.now() + index).slice(-3)}`;
+                    const newGoal = {
+                      id: goalId,
+                      curriculum: String(row['커리큘럼'] || 'CUSTOM').trim(),
+                      area: String(row['영역']).trim(),
+                      itemNumber: String(row['항목번호']).trim(),
+                      content: String(row['목표내용']).trim()
+                    };
+
+                    // 중복 체크 (커리큘럼 + 영역 + 항목번호 조합)
+                    const isDuplicate = goals.some(existingGoal => 
+                      existingGoal.curriculum === newGoal.curriculum &&
+                      existingGoal.area === newGoal.area && 
+                      existingGoal.itemNumber === newGoal.itemNumber
+                    );
+
+                    if (isDuplicate) {
+                      duplicates.push({
+                        ...newGoal,
+                        reason: '이미 존재하는 목표입니다'
+                      });
+                    } else {
+                      newGoals.push(newGoal);
+                    }
+                  }
+                });
+
+                if (newGoals.length > 0) {
+                  setGoals(prev => [...prev, ...newGoals]);
+                  alert(`${newGoals.length}개의 새로운 목표가 추가되었습니다!`);
+                }
+
+                if (duplicates.length > 0) {
+                  setDuplicateGoals(duplicates);
+                  alert(`${duplicates.length}개의 중복 목표가 발견되었습니다. 중복 목록을 확인해주세요.`);
+                }
+
+                if (newGoals.length === 0 && duplicates.length === 0) {
+                  alert('올바른 형식의 데이터가 없습니다. 커리큘럼, 영역, 항목번호, 목표내용 열이 필요합니다.');
+                }
+
+              } catch (error) {
+                console.error('파일 처리 오류:', error);
+                alert('파일을 읽는 중 오류가 발생했습니다. 엑셀 파일 형식을 확인해주세요.');
+              }
+            };
+
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; // 파일 입력 초기화
+          };
+
+          // 중복 목표 삭제
+          const removeDuplicateGoal = (goalIndex) => {
+            setDuplicateGoals(prev => prev.filter((_, index) => index !== goalIndex));
+          };
+
+          // 중복 목표 강제 추가
+          const forceAddDuplicateGoal = (goal) => {
+            const newGoal = {
+              ...goal,
+              id: `VB${Date.now()}`,
+              reason: undefined
+            };
+            setGoals(prev => [...prev, newGoal]);
+            setDuplicateGoals(prev => prev.filter(g => g !== goal));
+            alert('목표가 추가되었습니다.');
+          };
+
+          // 엑셀 다운로드 함수
+          const downloadExcel = (data, filename, status) => {
+            try {
+              // 워크북 생성
+              const wb = XLSX.utils.book_new();
+              
+              // 데이터 준비
+              const excelData = [];
+              
+              data.forEach(activity => {
+                const goal = goals.find(g => g.id === activity.goalId);
+                const baseData = {
+                  '영역': goal?.area || '',
+                  '항목번호': goal?.itemNumber || '',
+                  '목표내용': goal?.content || '',
+                  '시작일': activity.startDate || '',
+                  '완료일': activity.completedDate || '',
+                  '상태': activity.status || '',
+                  '메모': activity.memo || ''
+                };
+
+                if (activity.subItems && activity.subItems.length > 0) {
+                  // 세부 항목이 있는 경우
+                  activity.subItems.forEach((item, index) => {
+                    excelData.push({
+                      ...baseData,
+                      '세부항목': item.name,
+                      '세부완료': item.completed ? 'O' : 'X',
+                      '목표내용': index === 0 ? baseData['목표내용'] : '', // 첫 번째만 목표내용 표시
+                      '영역': index === 0 ? baseData['영역'] : '',
+                      '항목번호': index === 0 ? baseData['항목번호'] : '',
+                      '시작일': index === 0 ? baseData['시작일'] : '',
+                      '완료일': index === 0 ? baseData['완료일'] : '',
+                      '상태': index === 0 ? baseData['상태'] : '',
+                      '메모': index === 0 ? baseData['메모'] : ''
+                    });
+                  });
+                } else {
+                  // 세부 항목이 없는 경우
+                  excelData.push({
+                    ...baseData,
+                    '세부항목': '',
+                    '세부완료': ''
+                  });
+                }
+              });
+
+              // 워크시트 생성
+              const ws = XLSX.utils.json_to_sheet(excelData);
+              
+              // 컬럼 너비 설정
+              ws['!cols'] = [
+                { width: 10 }, // 영역
+                { width: 12 }, // 항목번호
+                { width: 50 }, // 목표내용
+                { width: 20 }, // 세부항목
+                { width: 8 },  // 세부완료
+                { width: 12 }, // 시작일
+                { width: 12 }, // 완료일
+                { width: 10 }, // 상태
+                { width: 20 }  // 메모
+              ];
+
+              // 워크북에 워크시트 추가
+              XLSX.utils.book_append_sheet(wb, ws, status || 'Sheet1');
+              
+              // 파일 다운로드
+              XLSX.writeFile(wb, filename);
+              
+            } catch (error) {
+              console.error('엑셀 다운로드 오류:', error);
+              alert('엑셀 다운로드 중 오류가 발생했습니다.');
+            }
+          };
+
+          // 아동별 리포트 다운로드
+          const downloadChildReport = (childId) => {
+            const child = children.find(c => c.id === childId);
+            const childActivities = activities.filter(activity => activity.childId === childId);
+            
+            if (childActivities.length === 0) {
+              alert('다운로드할 데이터가 없습니다.');
+              return;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `${child.name}_VB-MAPP_진행현황_${today}.xlsx`;
+            
+            downloadExcel(childActivities, filename, '전체현황');
+          };
+
+          // 상태별 다운로드
+          const downloadByStatus = (childId, status) => {
+            const child = children.find(c => c.id === childId);
+            const childActivities = activities.filter(activity => 
+              activity.childId === childId && activity.status === status
+            );
+            
+            if (childActivities.length === 0) {
+              alert('다운로드할 데이터가 없습니다.');
+              return;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `${child.name}_${status}_목표_${today}.xlsx`;
+            
+            downloadExcel(childActivities, filename, status);
+          };
+
+          const DashboardTab = () => (
             React.createElement('div', { className: "space-y-6" },
               React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
                 children.map(child => {
@@ -61,10 +725,26 @@
                           })
                         )
                       ),
-                      // (완료/진행중/보류 박스 완전 삭제!)
-                      React.createElement('div', { className: "text-sm text-gray-500" }, 
-                        `담당: ${therapist?.name}`
+                      
+                      React.createElement('div', { className: "grid grid-cols-3 gap-2 text-center text-xs" },
+                        React.createElement('div', { className: "bg-green-50 rounded p-2" },
+                          React.createElement('div', { className: "text-green-600 font-semibold" }, progress.completed),
+                          React.createElement('div', { className: "text-green-500" }, '완료')
+                        ),
+                        React.createElement('div', { className: "bg-blue-50 rounded p-2" },
+                          React.createElement('div', { className: "text-blue-600 font-semibold" }, progress.inProgress),
+                          React.createElement('div', { className: "text-blue-500" }, '진행중')
+                        ),
+                        React.createElement('div', { className: "bg-orange-50 rounded p-2" },
+                          React.createElement('div', { className: "text-orange-600 font-semibold" }, progress.onHold),
+                          React.createElement('div', { className: "text-orange-500" }, '보류')
+                        )
                       ),
+                      
+                      React.createElement('div', { className: "text-sm text-gray-500" }, 
+                        `담당: ${therapist?.name} · 총 ${progress.total}개 목표`
+                      ),
+                      
                       React.createElement('div', { className: "flex space-x-2" },
                         React.createElement('button', {
                           onClick: () => {setSelectedChild(child); setCurrentTab('childDetail');},
@@ -82,7 +762,802 @@
               )
             )
           );
-        // ... (하단 전체 동일, 수정 필요 X)
+
+          const ChildDetailTab = () => {
+            if (!selectedChild) return React.createElement('div', null, '아동을 선택해주세요.');
+            
+            const childActivities = activities.filter(activity => activity.childId === selectedChild.id);
+            const assignedGoalIds = childActivities.map(activity => activity.goalId);
+            
+            // 모든 목표에서 이미 할당된 것만 제외, 커리큘럼 필터 적용
+            let availableGoals = goals.filter(goal => !assignedGoalIds.includes(goal.id));
+            
+            // 커리큘럼 필터링
+            if (selectedCurriculum !== 'ALL') {
+              availableGoals = availableGoals.filter(goal => goal.curriculum === selectedCurriculum);
+            }
+            
+            // 사용 가능한 커리큘럼 목록 생성
+            const availableCurriculums = [...new Set(goals.map(goal => goal.curriculum))].sort();
+            
+            // 아동이 사용하는 커리큘럼별 진행상황 계산
+            const getCurriculumProgress = () => {
+              const curriculumData = {};
+              
+              childActivities.forEach(activity => {
+                const goal = goals.find(g => g.id === activity.goalId);
+                if (goal) {
+                  if (!curriculumData[goal.curriculum]) {
+                    curriculumData[goal.curriculum] = {
+                      total: 0,
+                      completed: 0,
+                      inProgress: 0,
+                      onHold: 0
+                    };
+                  }
+                  
+                  curriculumData[goal.curriculum].total++;
+                  if (activity.status === '완료') {
+                    curriculumData[goal.curriculum].completed++;
+                  } else if (activity.status === '진행중') {
+                    curriculumData[goal.curriculum].inProgress++;
+                  } else if (activity.status === '보류') {
+                    curriculumData[goal.curriculum].onHold++;
+                  }
+                }
+              });
+              
+              return curriculumData;
+            };
+            
+            const curriculumProgress = getCurriculumProgress();
+            
+            return React.createElement('div', { className: "space-y-6" },
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                  React.createElement('div', { className: "flex space-x-2" },
+                    React.createElement('button', {
+                      onClick: () => downloadChildReport(selectedChild.id),
+                      className: "bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors flex items-center space-x-2"
+                    },
+                      React.createElement(Download, { className: "" }),
+                      React.createElement('span', null, '전체 보고서')
+                    ),
+                    React.createElement('button', {
+                      onClick: () => setCurrentTab('dashboard'),
+                      className: "text-blue-500 hover:text-blue-700"
+                    }, '← 돌아가기')
+                  )
+                ),
+                
+                // 커리큘럼별 진행상황 표시
+                Object.keys(curriculumProgress).length > 0 && React.createElement('div', { className: "mb-6" },
+                  React.createElement('h3', { className: "text-lg font-semibold mb-3 text-gray-700" }, '커리큘럼별 진행상황'),
+                  React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" },
+                    Object.entries(curriculumProgress).map(([curriculum, data]) => {
+                      const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                      return React.createElement('div', { 
+                        key: curriculum, 
+                        className: "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow",
+                        onClick: (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Curriculum clicked:', curriculum, selectedChild.id);
+                          setShowCurriculumDetail({ curriculum, childId: selectedChild.id });
+                        }
+                      },
+                        React.createElement('div', { className: "flex items-center justify-between mb-2" },
+                          React.createElement('span', { className: "font-medium text-blue-800" }, curriculum),
+                          React.createElement('span', { className: "text-sm text-blue-600" }, `${progressRate}%`)
+                        ),
+                        React.createElement('div', { className: "w-full bg-blue-200 rounded-full h-2 mb-3" },
+                          React.createElement('div', { 
+                            className: "bg-blue-600 h-2 rounded-full transition-all duration-300",
+                            style: { width: `${progressRate}%` }
+                          })
+                        ),
+                        React.createElement('div', { className: "grid grid-cols-3 gap-2 text-xs text-center" },
+                          React.createElement('div', { className: "bg-green-100 text-green-700 rounded py-1" },
+                            React.createElement('div', { className: "font-semibold" }, data.completed),
+                            React.createElement('div', null, '완료')
+                          ),
+                          React.createElement('div', { className: "bg-blue-100 text-blue-700 rounded py-1" },
+                            React.createElement('div', { className: "font-semibold" }, data.inProgress),
+                            React.createElement('div', null, '진행중')
+                          ),
+                          React.createElement('div', { className: "bg-orange-100 text-orange-700 rounded py-1" },
+                            React.createElement('div', { className: "font-semibold" }, data.onHold),
+                            React.createElement('div', null, '보류')
+                          )
+                        ),
+                        React.createElement('div', { className: "mt-2 text-center text-xs text-gray-600" },
+                          `총 ${data.total}개 목표`
+                        ),
+                        React.createElement('div', { className: "mt-2 text-center text-xs text-blue-500 font-medium" },
+                          '👆 클릭하여 영역별 상세보기'
+                        )
+                      );
+                    })
+                  )
+                ),
+                
+                React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" },
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-blue-600" }, childActivities.length),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '총 할당 목표')
+                  ),
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-green-600" }, 
+                      childActivities.filter(a => a.status === '완료').length
+                    ),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '완료')
+                  ),
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-blue-600" }, 
+                      childActivities.filter(a => a.status === '진행중').length
+                    ),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '진행중')
+                  ),
+                  React.createElement('div', { className: "text-center" },
+                    React.createElement('div', { className: "text-2xl font-bold text-orange-600" }, 
+                      childActivities.filter(a => a.status === '보류').length
+                    ),
+                    React.createElement('div', { className: "text-sm text-gray-500" }, '보류')
+                  )
+                )
+              ),
+
+              // 진행중인 목표들
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '진행중인 목표'),
+                  React.createElement('button', {
+                    onClick: () => downloadByStatus(selectedChild.id, '진행중'),
+                    className: "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors flex items-center space-x-1"
+                  },
+                    React.createElement(Download, { className: "" }),
+                    React.createElement('span', { className: "text-sm" }, '엑셀')
+                  )
+                ),
+                React.createElement('div', { className: "space-y-3" },
+                  childActivities
+                    .filter(activity => activity.status === '진행중')
+                    .map(activity => {
+                      const goal = goals.find(g => g.id === activity.goalId);
+                      const subProgress = getSubItemProgress(activity.subItems || []); // 안전한 처리
+                      const isExpanded = expandedItems[activity.id];
+                      
+                      return React.createElement('div', { 
+                        key: activity.id, 
+                        className: "border rounded-lg p-4 bg-blue-50" 
+                      },
+                        React.createElement('div', { className: "flex justify-between items-start mb-2" },
+                          React.createElement('div', { className: "flex-1" },
+                            React.createElement('div', { className: "flex items-center space-x-2" },
+                              React.createElement('div', { className: "font-medium text-blue-800" }, 
+                                `${goal?.area} ${goal?.itemNumber}`
+                              ),
+                              subProgress.total > 0 && React.createElement('div', { 
+                                className: "text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded" 
+                              }, `${subProgress.completed}/${subProgress.total} 달성`)
+                            ),
+                            React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
+                            React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                              `시작일: ${activity.startDate}`
+                            ),
+                            React.createElement('div', { className: "flex items-center space-x-2 mt-2" },
+                              React.createElement('button', {
+                                onClick: () => toggleExpanded(activity.id),
+                                className: "text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                              },
+                                isExpanded ? React.createElement(ChevronUp, { className: "" }) : React.createElement(ChevronDown, { className: "" }),
+                                React.createElement('span', null, isExpanded ? '세부항목 접기' : '세부항목 펼치기')
+                              )
+                            )
+                          ),
+                          React.createElement('div', { className: "flex space-x-2" },
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '완료'),
+                              className: "bg-green-500 text-white p-2 rounded hover:bg-green-600",
+                              title: "완료"
+                            }, React.createElement(Check, { size: 16 })),
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '보류'),
+                              className: "bg-orange-500 text-white p-2 rounded hover:bg-orange-600",
+                              title: "보류"
+                            }, React.createElement(Pause, { size: 16 }))
+                          )
+                        ),
+                        
+                        // 세부 항목 섹션
+                        isExpanded && React.createElement('div', { className: "mt-4 pt-4 border-t border-blue-200" },
+                          React.createElement('div', { className: "flex justify-end items-center mb-3" },
+                            React.createElement('button', {
+                              onClick: () => addSubItem(activity.id),
+                              className: "bg-blue-500 text-white p-1 rounded hover:bg-blue-600 flex items-center space-x-1"
+                            },
+                              React.createElement(Plus, { className: "" }),
+                              React.createElement('span', { className: "text-xs" }, '항목 추가')
+                            )
+                          ),
+                          React.createElement('div', { className: "space-y-2" },
+                            (activity.subItems && activity.subItems.length > 0)
+                              ? activity.subItems.map(item =>
+                                  React.createElement('div', { 
+                                    key: item.id, 
+                                    className: "flex items-center justify-between bg-white p-2 rounded border" 
+                                  },
+                                    React.createElement('div', { className: "flex items-center space-x-2" },
+                                      React.createElement('input', {
+                                        type: "checkbox",
+                                        checked: item.completed,
+                                        onChange: () => toggleSubItem(activity.id, item.id),
+                                        className: "rounded"
+                                      }),
+                                      React.createElement('span', { 
+                                        className: `text-sm ${item.completed ? 'line-through text-gray-500' : 'text-gray-800'}` 
+                                      }, item.name)
+                                    ),
+                                    React.createElement('button', {
+                                      onClick: () => removeSubItem(activity.id, item.id),
+                                      className: "text-red-500 hover:text-red-700 text-xs"
+                                    }, '삭제')
+                                  )
+                                )
+                              : React.createElement('div', { className: "text-xs text-gray-500 italic" }, 
+                                  '세부 항목이 없습니다. "항목 추가" 버튼을 클릭하여 추가하세요.'
+                                ),
+                            
+                            // 새 항목 추가 인터페이스
+                            addingItemTo === activity.id && React.createElement('div', { 
+                              className: "bg-blue-50 p-3 rounded border border-blue-200" 
+                            },
+                              React.createElement('div', { className: "flex space-x-2" },
+                                React.createElement('input', {
+                                  type: "text",
+                                  value: newItemName,
+                                  onChange: (e) => setNewItemName(e.target.value),
+                                  placeholder: "새 세부 항목 입력...",
+                                  className: "flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                  autoFocus: true,
+                                  onKeyDown: (e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      saveNewSubItem(activity.id);
+                                    } else if (e.key === 'Escape') {
+                                      e.preventDefault();
+                                      cancelAddSubItem();
+                                    }
+                                  }
+                                }),
+                                React.createElement('button', {
+                                  type: "button",
+                                  onClick: (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    saveNewSubItem(activity.id);
+                                  },
+                                  className: "bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
+                                }, '저장'),
+                                React.createElement('button', {
+                                  type: "button",
+                                  onClick: (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    cancelAddSubItem();
+                                  },
+                                  className: "bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-400"
+                                }, '취소')
+                              )
+                            )
+                          )
+                        )
+                      );
+                    })
+                )
+              ),
+
+              // 완료된 목표들
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '완료된 목표'),
+                  React.createElement('button', {
+                    onClick: () => downloadByStatus(selectedChild.id, '완료'),
+                    className: "bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors flex items-center space-x-1"
+                  },
+                    React.createElement(Download, { className: "" }),
+                    React.createElement('span', { className: "text-sm" }, '엑셀')
+                  )
+                ),
+                React.createElement('div', { className: "space-y-3" },
+                  childActivities
+                    .filter(activity => activity.status === '완료')
+                    .map(activity => {
+                      const goal = goals.find(g => g.id === activity.goalId);
+                      return React.createElement('div', { 
+                        key: activity.id, 
+                        className: "border rounded-lg p-4 bg-green-50" 
+                      },
+                        React.createElement('div', { className: "flex justify-between items-start" },
+                          React.createElement('div', { className: "flex-1" },
+                            React.createElement('div', { className: "font-medium text-green-800" }, 
+                              `${goal?.area} ${goal?.itemNumber}`
+                            ),
+                            React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
+                            React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                              `완료일: ${activity.completedDate}`
+                            ),
+                            activity.memo && React.createElement('div', { className: "text-xs text-gray-600 mt-1" }, 
+                              `메모: ${activity.memo}`
+                            )
+                          )
+                        )
+                      );
+                    })
+                )
+              ),
+
+              // 보류된 목표들
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '보류된 목표'),
+                  React.createElement('button', {
+                    onClick: () => downloadByStatus(selectedChild.id, '보류'),
+                    className: "bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600 transition-colors flex items-center space-x-1"
+                  },
+                    React.createElement(Download, { className: "" }),
+                    React.createElement('span', { className: "text-sm" }, '엑셀')
+                  )
+                ),
+                React.createElement('div', { className: "space-y-3" },
+                  childActivities
+                    .filter(activity => activity.status === '보류')
+                    .map(activity => {
+                      const goal = goals.find(g => g.id === activity.goalId);
+                      return React.createElement('div', { 
+                        key: activity.id, 
+                        className: "border rounded-lg p-4 bg-orange-50" 
+                      },
+                        React.createElement('div', { className: "flex justify-between items-start" },
+                          React.createElement('div', { className: "flex-1" },
+                            React.createElement('div', { className: "font-medium text-orange-800" }, 
+                              `${goal?.area} ${goal?.itemNumber}`
+                            ),
+                            React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal?.content),
+                            React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                              `시작일: ${activity.startDate}`
+                            ),
+                            activity.memo && React.createElement('div', { className: "text-xs text-gray-600 mt-1" }, 
+                              `보류 사유: ${activity.memo}`
+                            )
+                          ),
+                          React.createElement('div', { className: "flex space-x-2" },
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '진행중'),
+                              className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600",
+                              title: "재시작"
+                            }, React.createElement(Play, { size: 16 })),
+                            React.createElement('button', {
+                              onClick: () => updateGoalStatus(activity.id, '완료'),
+                              className: "bg-green-500 text-white p-2 rounded hover:bg-green-600",
+                              title: "완료"
+                            }, React.createElement(Check, { size: 16 }))
+                          )
+                        )
+                      );
+                    })
+                )
+              ),
+
+              // 새 목표 할당
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h3', { className: "text-lg font-semibold" }, '새 목표 할당'),
+                  React.createElement('div', { className: "flex items-center space-x-3" },
+                    React.createElement('select', {
+                      value: selectedCurriculum,
+                      onChange: (e) => setSelectedCurriculum(e.target.value),
+                      className: "px-3 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    },
+                      React.createElement('option', { value: 'ALL' }, '모든 커리큘럼'),
+                      availableCurriculums.map(curriculum =>
+                        React.createElement('option', { key: curriculum, value: curriculum }, curriculum)
+                      )
+                    ),
+                    React.createElement('span', { className: "text-sm text-gray-500" }, 
+                      `할당 가능한 목표: ${availableGoals.length}개`
+                    )
+                  )
+                ),
+                availableGoals.length > 0 
+                  ? React.createElement('div', { className: "space-y-3 max-h-60 overflow-y-auto" },
+                      availableGoals.map(goal =>
+                        React.createElement('div', { 
+                          key: goal.id, 
+                          className: "border rounded-lg p-4 hover:bg-gray-50" 
+                        },
+                          React.createElement('div', { className: "flex justify-between items-start" },
+                            React.createElement('div', { className: "flex-1" },
+                              React.createElement('div', { className: "flex items-center space-x-2 mb-1" },
+                                React.createElement('span', { className: "font-medium" }, 
+                                  `${goal.area} ${goal.itemNumber}`
+                                ),
+                                React.createElement('span', { 
+                                  className: "text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded" 
+                                }, goal.curriculum)
+                              ),
+                              React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal.content)
+                            ),
+                            React.createElement('button', {
+                              onClick: () => assignGoal(selectedChild.id, goal.id),
+                              className: "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                            }, '할당')
+                          )
+                        )
+                      )
+                    )
+                  : React.createElement('div', { className: "text-center py-8 text-gray-500" },
+                      React.createElement('p', null, '할당 가능한 새 목표가 없습니다.'),
+                      React.createElement('p', { className: "text-sm mt-2" }, 
+                        selectedCurriculum === 'ALL' 
+                          ? '목표 목록 탭에서 새로운 목표를 업로드하거나 추가해보세요.' 
+                          : `${selectedCurriculum} 커리큘럼의 할당 가능한 목표가 없습니다.`
+                      )
+                    )
+              )
+            );
+          };
+
+          // 커리큘럼 상세 분석 모달
+          const CurriculumDetailModal = () => {
+            if (!showCurriculumDetail) return null;
+            
+            const { curriculum, childId } = showCurriculumDetail;
+            const child = children.find(c => c.id === childId);
+            const areaData = getCurriculumAreaAnalysis(childId, curriculum);
+            const milestoneAreaData = curriculum === 'VB-MAPP' ? getVBMAPPMilestones(childId) : null;
+            const levelData = curriculum === 'VB-MAPP' ? getVBMAPPLevels(childId) : null;
+            
+            return React.createElement('div', { 
+              className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50",
+              onClick: (e) => {
+                e.preventDefault();
+                setShowCurriculumDetail(null);
+              }
+            },
+              React.createElement('div', { 
+                className: "bg-white rounded-xl p-8 max-w-6xl w-full m-4 max-h-[90vh] overflow-y-auto shadow-2xl",
+                onClick: (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              },
+                React.createElement('div', { className: "flex items-center justify-between mb-8 pb-4 border-b" },
+                  React.createElement('div', null,
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, 
+                      `${child?.name} - ${curriculum}`
+                    ),
+                    React.createElement('p', { className: "text-gray-600 mt-1" }, '영역별 마스터리 현황')
+                  ),
+                  React.createElement('button', {
+                    onClick: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowCurriculumDetail(null);
+                    },
+                    className: "text-gray-400 hover:text-gray-600 text-3xl font-light w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                  }, '×')
+                ),
+                
+                // VB-MAPP 레벨별 마일스톤 차트
+                levelData && Object.keys(levelData).length > 0 && React.createElement('div', { className: "mb-8" },
+                  React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, 'VB-MAPP 레벨별 마일스톤 달성 현황'),
+                  React.createElement('div', { className: "bg-gray-50 rounded-lg p-6" },
+                    React.createElement('div', { className: "flex items-end justify-center space-x-8 h-64" },
+                      Object.entries(levelData)
+                        .map(([level, data]) => {
+                          const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                          const maxHeight = 200; // 최대 높이
+                          const barHeight = (progressRate / 100) * maxHeight;
+                          
+                          return React.createElement('div', { 
+                            key: level,
+                            className: "flex flex-col items-center"
+                          },
+                            React.createElement('div', { className: "text-sm font-semibold text-gray-600 mb-2" },
+                              `${data.completed}/${data.total}`
+                            ),
+                            React.createElement('div', { className: "text-xs text-gray-500 mb-1" },
+                              `${progressRate}%`
+                            ),
+                            React.createElement('div', { 
+                              className: "w-16 bg-gray-200 rounded-t-lg flex flex-col justify-end",
+                              style: { height: `${maxHeight}px` }
+                            },
+                              React.createElement('div', { 
+                                className: `w-full rounded-t-lg transition-all duration-700 ${
+                                  progressRate >= 80 ? 'bg-green-500' :
+                                  progressRate >= 60 ? 'bg-blue-500' :
+                                  progressRate >= 40 ? 'bg-yellow-500' :
+                                  progressRate >= 20 ? 'bg-orange-500' : 'bg-red-400'
+                                }`,
+                                style: { height: `${barHeight}px` }
+                              })
+                            ),
+                            React.createElement('div', { className: "text-sm font-semibold text-gray-700 mt-2 text-center" },
+                              level
+                            )
+                          );
+                        })
+                    )
+                  )
+                ),
+                
+                // VB-MAPP 영역별 마일스톤 달성 현황
+                milestoneAreaData && Object.keys(milestoneAreaData).length > 0 && React.createElement('div', { className: "mb-8" },
+                  React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, 'VB-MAPP 영역별 마일스톤 달성 현황'),
+                  React.createElement('div', { className: "bg-gray-50 rounded-lg p-6" },
+                    React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" },
+                      Object.entries(milestoneAreaData)
+                        .sort(([, a], [, b]) => b.total - a.total)
+                        .map(([area, data]) => {
+                          const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                          
+                          return React.createElement('div', { 
+                            key: area,
+                            className: "bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
+                          },
+                            React.createElement('div', { className: "text-center mb-3" },
+                              React.createElement('h4', { className: "font-semibold text-gray-800 text-sm mb-1" }, area),
+                              React.createElement('div', { className: "text-lg font-bold text-gray-800" }, 
+                                `${data.completed}/${data.total}`
+                              ),
+                              React.createElement('div', { className: "text-xs text-gray-600" }, 
+                                `${progressRate}%`
+                              )
+                            ),
+                            
+                            React.createElement('div', { className: "w-full bg-gray-200 rounded-full h-2" },
+                              React.createElement('div', { 
+                                className: `h-2 rounded-full transition-all duration-500 ${
+                                  progressRate >= 80 ? 'bg-green-500' :
+                                  progressRate >= 60 ? 'bg-blue-500' :
+                                  progressRate >= 40 ? 'bg-yellow-500' :
+                                  progressRate >= 20 ? 'bg-orange-500' : 'bg-red-400'
+                                }`,
+                                style: { width: `${progressRate}%` }
+                              })
+                            )
+                          );
+                        })
+                    )
+                  )
+                ),
+                
+                Object.keys(areaData).length > 0 
+                  ? React.createElement('div', null,
+                      React.createElement('h3', { className: "text-xl font-semibold text-gray-800 mb-6" }, '영역별 전체 목표 현황'),
+                      React.createElement('div', { className: "grid grid-cols-1 gap-6" },
+                        Object.entries(areaData)
+                          .sort(([, a], [, b]) => b.total - a.total)
+                          .map(([area, data]) => {
+                            const progressRate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                            
+                            return React.createElement('div', { 
+                              key: area,
+                              className: "bg-gray-50 rounded-lg p-6 border border-gray-200"
+                            },
+                              React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                                React.createElement('h4', { className: "text-lg font-semibold text-gray-800" }, area),
+                                React.createElement('div', { className: "text-right" },
+                                  React.createElement('span', { className: "text-2xl font-bold text-gray-800" }, 
+                                    `${data.completed}/${data.total}`
+                                  ),
+                                  React.createElement('span', { className: "text-lg text-gray-600 ml-2" }, 
+                                    `(${progressRate}%)`
+                                  )
+                                )
+                              ),
+                              
+                              React.createElement('div', { className: "relative mb-4" },
+                                React.createElement('div', { 
+                                  className: "w-full bg-gray-200 rounded-full h-4"
+                                },
+                                  React.createElement('div', { 
+                                    className: `h-4 rounded-full transition-all duration-500 ${
+                                      progressRate >= 80 ? 'bg-green-500' :
+                                      progressRate >= 60 ? 'bg-blue-500' :
+                                      progressRate >= 40 ? 'bg-yellow-500' :
+                                      progressRate >= 20 ? 'bg-orange-500' : 'bg-red-400'
+                                    }`,
+                                    style: { width: `${progressRate}%` }
+                                  })
+                                )
+                              ),
+                              
+                              data.inProgress > 0 || data.onHold > 0 ? React.createElement('div', { className: "grid grid-cols-3 gap-3 text-sm" },
+                                React.createElement('div', { className: "text-center text-gray-600" },
+                                  React.createElement('div', { className: "font-semibold" }, data.completed),
+                                  React.createElement('div', null, '완료')
+                                ),
+                                React.createElement('div', { className: "text-center text-blue-600" },
+                                  React.createElement('div', { className: "font-semibold" }, data.inProgress),
+                                  React.createElement('div', null, '진행중')
+                                ),
+                                React.createElement('div', { className: "text-center text-orange-600" },
+                                  React.createElement('div', { className: "font-semibold" }, data.onHold),
+                                  React.createElement('div', null, '보류')
+                                )
+                              ) : null
+                            );
+                          })
+                      )
+                    )
+                  : React.createElement('div', { className: "text-center py-12 text-gray-500" },
+                      React.createElement('p', { className: "text-xl mb-2" }, '아직 목표가 할당되지 않았습니다'),
+                      React.createElement('p', { className: "text-sm" }, '새 목표 할당에서 목표를 추가해보세요')
+                    )
+              )
+            );
+          };
+
+          const GoalsTab = () => {
+            const filteredGoals = goals.filter(goal => 
+              goal.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              goal.area.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              goal.id.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            return React.createElement('div', { className: "space-y-6" },
+              React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, 'VB-MAPP 목표 목록'),
+                  React.createElement('div', { className: "flex items-center space-x-4" },
+                    React.createElement('div', { className: "relative" },
+                      React.createElement(Search, { 
+                        className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400", 
+                        size: 20 
+                      }),
+                      React.createElement('input', {
+                        type: "text",
+                        placeholder: "목표 검색...",
+                        className: "pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                        value: searchTerm,
+                        onChange: (e) => setSearchTerm(e.target.value)
+                      })
+                    ),
+                    React.createElement('label', {
+                      className: "bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors flex items-center space-x-2 cursor-pointer"
+                    },
+                      React.createElement(Upload, { className: "" }),
+                      React.createElement('span', null, '엑셀 업로드'),
+                      React.createElement('input', {
+                        type: "file",
+                        accept: ".xlsx,.xls",
+                        onChange: handleFileUpload,
+                        className: "hidden"
+                      })
+                    )
+                  )
+                ),
+                
+                React.createElement('div', { className: "space-y-3 max-h-96 overflow-y-auto" },
+                  filteredGoals.map(goal =>
+                    React.createElement('div', { 
+                      key: goal.id, 
+                      className: "border rounded-lg p-4 hover:bg-gray-50" 
+                    },
+                      React.createElement('div', { className: "flex justify-between items-start" },
+                        React.createElement('div', { className: "flex-1" },
+                          React.createElement('div', { className: "flex items-center space-x-2 mb-1" },
+                            React.createElement('div', { className: "font-medium text-blue-800" }, 
+                              `${goal.area} ${goal.itemNumber}`
+                            ),
+                            React.createElement('span', { 
+                              className: "text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded" 
+                            }, goal.curriculum)
+                          ),
+                          React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal.content)
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+
+              // 중복 목표 확인 섹션
+              duplicateGoals.length > 0 && React.createElement('div', { className: "bg-white rounded-lg shadow-md p-6" },
+                React.createElement('h3', { className: "text-lg font-semibold text-orange-600 mb-4" }, 
+                  `중복 목표 확인 (${duplicateGoals.length}개)`
+                ),
+                React.createElement('div', { className: "space-y-3" },
+                  duplicateGoals.map((goal, index) =>
+                    React.createElement('div', { 
+                      key: index, 
+                      className: "border border-orange-200 rounded-lg p-4 bg-orange-50" 
+                    },
+                      React.createElement('div', { className: "flex justify-between items-start" },
+                        React.createElement('div', { className: "flex-1" },
+                          React.createElement('div', { className: "font-medium text-orange-800" }, 
+                            `${goal.area} ${goal.itemNumber}`
+                          ),
+                          React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, goal.content),
+                          React.createElement('div', { className: "text-xs text-orange-600 mt-2" }, goal.reason)
+                        ),
+                        React.createElement('div', { className: "flex space-x-2" },
+                          React.createElement('button', {
+                            onClick: () => forceAddDuplicateGoal(goal),
+                            className: "bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600"
+                          }, '강제 추가'),
+                          React.createElement('button', {
+                            onClick: () => removeDuplicateGoal(index),
+                            className: "bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600"
+                          }, '제거')
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            );
+          };
+
+          return React.createElement('div', { className: "min-h-screen bg-gray-100" },
+            React.createElement('header', { className: "bg-white shadow-sm border-b" },
+              React.createElement('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+                React.createElement('div', { className: "flex justify-between items-center h-16" },
+                  React.createElement('div', { className: "flex items-center" },
+                    React.createElement(Target, { className: "h-8 w-8 text-blue-600 mr-3" }),
+                    React.createElement('h1', { className: "text-xl font-bold text-gray-900" }, 'VB-MAPP 관리 시스템')
+                  ),
+                  React.createElement('div', { className: "flex items-center space-x-4" },
+                    React.createElement('span', { className: "text-sm text-gray-600" }, '김해미 치료사'),
+                    React.createElement(User, { className: "h-6 w-6 text-gray-600" })
+                  )
+                )
+              )
+            ),
+
+            React.createElement('nav', { className: "bg-white border-b" },
+              React.createElement('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+                React.createElement('div', { className: "flex space-x-8" },
+                  React.createElement('button', {
+                    onClick: () => setCurrentTab('dashboard'),
+                    className: `py-4 px-2 border-b-2 font-medium text-sm ${
+                      currentTab === 'dashboard' 
+                        ? 'border-blue-500 text-blue-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`
+                  }, '대시보드'),
+                  React.createElement('button', {
+                    onClick: () => setCurrentTab('goals'),
+                    className: `py-4 px-2 border-b-2 font-medium text-sm ${
+                      currentTab === 'goals' 
+                        ? 'border-blue-500 text-blue-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`
+                  }, '목표 목록'),
+                  selectedChild && currentTab === 'childDetail' && React.createElement('button', {
+                    className: "py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium text-sm"
+                  }, `${selectedChild.name} 관리`)
+                )
+              )
+            ),
+
+            React.createElement('main', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" },
+              currentTab === 'dashboard' && DashboardTab(),
+              currentTab === 'goals' && GoalsTab(),
+              currentTab === 'childDetail' && ChildDetailTab()
+            ),
+
+            // 커리큘럼 상세 분석 모달
+            CurriculumDetailModal()
+          );
+        };
+
+        // React 앱 렌더링
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(VBMAPPApp));
     </script>
 </body>
 </html>
