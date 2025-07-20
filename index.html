@@ -170,6 +170,8 @@
           });
           const [therapists, setTherapists] = useState(sampleTherapists);
           const [expandedItems, setExpandedItems] = useState({});
+          const [addingItemTo, setAddingItemTo] = useState(null);
+          const [newItemName, setNewItemName] = useState('');
 
           useEffect(() => {
             try {
@@ -232,8 +234,12 @@
           };
 
           const addSubItem = (activityId) => {
-            const itemName = prompt('세부 항목을 입력하세요:');
-            if (itemName && itemName.trim()) {
+            setAddingItemTo(activityId);
+            setNewItemName('');
+          };
+
+          const saveNewSubItem = (activityId) => {
+            if (newItemName && newItemName.trim()) {
               setActivities(prev => prev.map(activity => 
                 activity.id === activityId 
                   ? {
@@ -242,14 +248,21 @@
                         ...activity.subItems,
                         {
                           id: `SI${Date.now()}`,
-                          name: itemName.trim(),
+                          name: newItemName.trim(),
                           completed: false
                         }
                       ]
                     }
                   : activity
               ));
+              setAddingItemTo(null);
+              setNewItemName('');
             }
+          };
+
+          const cancelAddSubItem = () => {
+            setAddingItemTo(null);
+            setNewItemName('');
           };
 
           const toggleSubItem = (activityId, subItemId) => {
@@ -614,7 +627,38 @@
                                 )
                               : React.createElement('div', { className: "text-xs text-gray-500 italic" }, 
                                   '세부 항목이 없습니다. "항목 추가" 버튼을 클릭하여 추가하세요.'
-                                )
+                                ),
+                            
+                            // 새 항목 추가 인터페이스
+                            addingItemTo === activity.id && React.createElement('div', { 
+                              className: "bg-blue-50 p-3 rounded border border-blue-200" 
+                            },
+                              React.createElement('div', { className: "flex space-x-2" },
+                                React.createElement('input', {
+                                  type: "text",
+                                  value: newItemName,
+                                  onChange: (e) => setNewItemName(e.target.value),
+                                  placeholder: "새 세부 항목 입력...",
+                                  className: "flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                  autoFocus: true,
+                                  onKeyPress: (e) => {
+                                    if (e.key === 'Enter') {
+                                      saveNewSubItem(activity.id);
+                                    } else if (e.key === 'Escape') {
+                                      cancelAddSubItem();
+                                    }
+                                  }
+                                }),
+                                React.createElement('button', {
+                                  onClick: () => saveNewSubItem(activity.id),
+                                  className: "bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
+                                }, '저장'),
+                                React.createElement('button', {
+                                  onClick: cancelAddSubItem,
+                                  className: "bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-400"
+                                }, '취소')
+                              )
+                            )
                           )
                         )
                       );
